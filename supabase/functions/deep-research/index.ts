@@ -48,7 +48,7 @@ type ResearchReport = {
 // Config
 const MODEL_NAME = "gpt-4.1-2025-04-14"; // Use the flagship model
 const API_TIMEOUT = 180000; // 3 minutes for API calls
-const OPENAI_TIMEOUT = 600000; // 10 minutes for OpenAI - long reports need time
+const OPENAI_TIMEOUT = 240000; // 4 minutes for OpenAI - within Supabase limits
 const TARGET_WORD_COUNT_MIN = 4000;
 const TARGET_WORD_COUNT_LITE = 800;
 
@@ -371,69 +371,86 @@ async function performDeepResearch(
 
   console.log(`[${requestId}] Generated ${uniqueQueries.length} search queries, found ${uniqueSources.length} unique sources`);
 
-  const { result: response, retries: retriesUsed } = await retry(() =>
-    withTimeout(fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL_NAME,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.4,
-        max_tokens: mode === "deep-dive" ? 32000 : 4000 // Much higher token limit for long reports
-      })
-    }), OPENAI_TIMEOUT), 2, debug // Use longer timeout for OpenAI
-  );
+  console.log(`[${requestId}] Starting OpenAI request with ${webContext.length} chars of context`);
+  
+  try {
+    const { result: response, retries: retriesUsed } = await retry(() =>
+      withTimeout(fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MODEL_NAME,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.4,
+          max_tokens: mode === "deep-dive" ? 32000 : 4000 // Much higher token limit for long reports
+        })
+      }), OPENAI_TIMEOUT), 1, debug // Reduce retries to avoid timeout
+    );
 
-  const data = await response.json();
-  const report = data.choices?.[0]?.message?.content || "";
-  const wordCount = report.split(/\s+/).length;
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
 
-  console.log(`[${requestId}] Generated report with ${wordCount} words after ${retriesUsed} retries`);
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(`OpenAI API error: ${data.error.message}`);
+    }
+    
+    const report = data.choices?.[0]?.message?.content || "";
+    const wordCount = report.split(/\s+/).length;
 
-  const { score: confidenceScore, reason: confidenceReason } = extractConfidenceScore(report);
-  const durationMs = Date.now() - start;
-  const jsonSections = extractJsonSections(report);
+    console.log(`[${requestId}] Generated report with ${wordCount} words after ${retriesUsed} retries`);
 
-  let strictModeWarnings: string[] | undefined = undefined;
-  if (strict_mode) {
-    strictModeWarnings = validateStrictMode(report, jsonSections, mode);
+    const { score: confidenceScore, reason: confidenceReason } = extractConfidenceScore(report);
+    const durationMs = Date.now() - start;
+    const jsonSections = extractJsonSections(report);
+
+    let strictModeWarnings: string[] | undefined = undefined;
+    if (strict_mode) {
+      strictModeWarnings = validateStrictMode(report, jsonSections, mode);
+    }
+
+    const speculativeDensity = computeSpeculativeDensity(report, jsonSections);
+    const sectionCoverageScore = scoreSectionCoverage(jsonSections);
+
+    const metadata: RequestMetadata = {
+      createdAt: Date.now(),
+      requestId,
+      wordCount,
+      queryTerms: uniqueQueries,
+      retries: retriesUsed,
+      durationMs,
+      confidenceReason,
+      speculativeDensity,
+      sectionCoverageScore,
+      ...(strictModeWarnings ? { strictModeWarnings } : {})
+    };
+
+    const researchReport: ResearchReport = {
+      report,
+      sources: uniqueSources,
+      requestId,
+      confidenceScore,
+      mode,
+      metadata,
+      jsonSections
+    };
+
+    console.log(`[${requestId}] Research completed in ${durationMs}ms with confidence score ${confidenceScore}`);
+
+    return researchReport;
+    
+  } catch (error) {
+    console.error(`[${requestId}] OpenAI request failed:`, error);
+    throw new Error(`OpenAI request failed: ${error.message}`);
   }
-
-  const speculativeDensity = computeSpeculativeDensity(report, jsonSections);
-  const sectionCoverageScore = scoreSectionCoverage(jsonSections);
-
-  const metadata: RequestMetadata = {
-    createdAt: Date.now(),
-    requestId,
-    wordCount,
-    queryTerms: uniqueQueries,
-    retries: retriesUsed,
-    durationMs,
-    confidenceReason,
-    speculativeDensity,
-    sectionCoverageScore,
-    ...(strictModeWarnings ? { strictModeWarnings } : {})
-  };
-
-  const researchReport: ResearchReport = {
-    report,
-    sources: uniqueSources,
-    requestId,
-    confidenceScore,
-    mode,
-    metadata,
-    jsonSections
-  };
-
-  console.log(`[${requestId}] Research completed in ${durationMs}ms with confidence score ${confidenceScore}`);
-
-  return researchReport;
 }
 
 serve(async (req) => {
