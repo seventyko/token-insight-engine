@@ -3,6 +3,7 @@ import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectInput {
   project_name: string;
@@ -20,106 +21,32 @@ const Index = () => {
   const handleResearch = async (data: ProjectInput, mode: 'deep-dive' | 'lite') => {
     setIsLoading(true);
     try {
-      // For demo purposes, we'll simulate the API call
-      // In production, this would call your Supabase Edge Function
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API delay
-      
-      // Mock response for demonstration
-      const mockReport: ResearchReport = {
-        report: `# ${data.project_name} Research Report
-
-## TLDR
-**ESSENCE**: ${data.project_name} represents a significant player in the crypto ecosystem with strong fundamentals and growth potential.
-
-🔮 **Speculative Angle**: Based on current market trends and development patterns, ${data.project_name} is positioned for potential significant growth in the next 12-18 months, particularly if the broader DeFi ecosystem continues expanding.
-
-## Project Information & Competition
-**ESSENCE**: ${data.project_name} operates in a competitive but growing market sector with clear differentiation.
-
-🔮 **Speculative Angle**: The competitive landscape suggests consolidation may occur, potentially benefiting established players like ${data.project_name} who have achieved product-market fit.
-
-## Team, Venture Funds, CEO and Key Members
-**ESSENCE**: Strong technical team with proven track record in blockchain development.
-
-🔮 **Speculative Angle**: The team's previous experience at major tech companies provides strategic advantages in scaling and partnerships that may not be fully reflected in current valuations.
-
-## Tokenomics
-**ESSENCE**: Well-structured token distribution with reasonable vesting schedules.
-
-🔮 **Speculative Angle**: The tokenomics design appears to incentivize long-term holding, which could create supply pressure during bull markets.
-
-## Airdrops and Incentive Programs
-**ESSENCE**: Strategic use of incentive mechanisms to drive adoption and engagement.
-
-🔮 **Speculative Angle**: Future airdrop expectations may be driving current usage patterns, creating potential volatility once programs conclude.
-
-## Social Media & Community Analysis
-**ESSENCE**: Active and engaged community across major platforms.
-
-🔮 **Speculative Angle**: Community sentiment indicators suggest building momentum that historically precedes major price movements.
-
-## On-Chain Overview
-**ESSENCE**: Strong on-chain metrics indicating healthy protocol usage.
-
-🔮 **Speculative Angle**: TVL growth patterns suggest institutional adoption may be accelerating faster than publicly disclosed.
-
-## Conclusion
-**ESSENCE**: ${data.project_name} demonstrates strong fundamentals with potential for significant growth.
-
-🔮 **Speculative Angle**: Multiple convergence factors suggest ${data.project_name} may outperform sector averages in upcoming market cycles.`,
-        sources: [
-          {
-            title: `${data.project_name} Official Documentation`,
-            url: data.project_website || 'https://example.com',
-            content: 'Official project documentation and whitepaper'
-          },
-          {
-            title: `${data.project_name} Twitter Analysis`,
-            url: data.project_twitter || 'https://twitter.com',
-            content: 'Social media sentiment and community engagement metrics'
-          }
-        ],
-        requestId: `req_${Date.now()}`,
-        confidenceScore: 85,
-        mode,
-        metadata: {
-          createdAt: Date.now(),
-          requestId: `req_${Date.now()}`,
-          wordCount: mode === 'deep-dive' ? 4250 : 850,
-          queryTerms: [
-            `${data.project_name} whitepaper`,
-            `${data.project_name} tokenomics`,
-            `${data.project_name} team`,
-            `${data.project_name} partnerships`
-          ],
-          retries: 0,
-          durationMs: 2800,
-          confidenceReason: 'High confidence based on comprehensive source analysis',
-          strictModeWarnings: data.strict_mode ? [] : undefined,
-          speculativeDensity: 0.15,
-          sectionCoverageScore: 0.95
-        },
-        jsonSections: {
-          "TLDR": `**ESSENCE**: ${data.project_name} represents a significant player in the crypto ecosystem with strong fundamentals and growth potential.\n\n🔮 **Speculative Angle**: Based on current market trends and development patterns, ${data.project_name} is positioned for potential significant growth in the next 12-18 months, particularly if the broader DeFi ecosystem continues expanding.`,
-          "Project Information & Competition": `**ESSENCE**: ${data.project_name} operates in a competitive but growing market sector with clear differentiation.\n\n🔮 **Speculative Angle**: The competitive landscape suggests consolidation may occur, potentially benefiting established players like ${data.project_name} who have achieved product-market fit.`,
-          "Team, Venture Funds, CEO and Key Members": `**ESSENCE**: Strong technical team with proven track record in blockchain development.\n\n🔮 **Speculative Angle**: The team's previous experience at major tech companies provides strategic advantages in scaling and partnerships that may not be fully reflected in current valuations.`,
-          "Tokenomics": `**ESSENCE**: Well-structured token distribution with reasonable vesting schedules.\n\n🔮 **Speculative Angle**: The tokenomics design appears to incentivize long-term holding, which could create supply pressure during bull markets.`,
-          "Airdrops and Incentive Programs": `**ESSENCE**: Strategic use of incentive mechanisms to drive adoption and engagement.\n\n🔮 **Speculative Angle**: Future airdrop expectations may be driving current usage patterns, creating potential volatility once programs conclude.`,
-          "Social Media & Community Analysis": `**ESSENCE**: Active and engaged community across major platforms.\n\n🔮 **Speculative Angle**: Community sentiment indicators suggest building momentum that historically precedes major price movements.`,
-          "On-Chain Overview": `**ESSENCE**: Strong on-chain metrics indicating healthy protocol usage.\n\n🔮 **Speculative Angle**: TVL growth patterns suggest institutional adoption may be accelerating faster than publicly disclosed.`,
-          "Conclusion": `**ESSENCE**: ${data.project_name} demonstrates strong fundamentals with potential for significant growth.\n\n🔮 **Speculative Angle**: Multiple convergence factors suggest ${data.project_name} may outperform sector averages in upcoming market cycles.`
+      const response = await supabase.functions.invoke('deep-research', {
+        body: {
+          project_name: data.project_name,
+          project_website: data.project_website,
+          project_twitter: data.project_twitter,
+          project_contract: data.project_contract,
+          strict_mode: data.strict_mode,
+          mode: mode,
+          debug: false
         }
-      };
+      });
 
-      setResults(mockReport);
+      if (response.error) {
+        throw new Error(response.error.message || 'Research failed');
+      }
+
+      setResults(response.data);
       toast({
         title: "Research Complete",
         description: `Generated ${mode === 'deep-dive' ? 'comprehensive' : 'quick'} analysis for ${data.project_name}`,
       });
     } catch (error) {
+      console.error('Research failed:', error);
       toast({
         title: "Research Failed",
-        description: "Unable to generate research report. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to generate research report. Please try again.",
         variant: "destructive",
       });
     } finally {
