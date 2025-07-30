@@ -64,23 +64,43 @@ const REPORT_STRUCTURE = [
 ];
 
 const COMBINED_STRUCTURE_PROMPT = `
+**CRITICAL REQUIREMENTS:**
+- MINIMUM 4000 words for deep-dive reports (TARGET: 5000-7000 words)
+- ALL sections must be comprehensive with detailed analysis
+- EVERY section MUST include substantial speculative content
+
 You must organize the research report into the following exact sections:
 
 ${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
-For each section:
-- Begin with a bold ESSENCE line (summary takeaway)
-- Include a 🔮 Speculative Angle subsection (feel free to synthesize trends, future risks, and possible strategies—even if not directly stated)
-  - Synthesize unseen risks, game-theoretic behaviors, or protocol design incentives.
-  - Build light narratives on how the project might evolve based on current facts.
-  - Mention fringe theories, KOL speculation, or future catalysts (label clearly).
-- Use high-signal, crisp writing tailored for advanced crypto market participants
-- Prioritize clarity, but it's okay to elaborate when the content offers strategic insight
-- Cite sources inline where appropriate
+**MANDATORY STRUCTURE FOR EACH SECTION:**
+- **ESSENCE** (bold): 1-2 sentence summary takeaway
+- **DETAILED ANALYSIS** (300-600 words): Comprehensive examination with data, facts, and context
+- **🔮 SPECULATIVE ANGLE** (200-400 words per section): 
+  * Synthesize trends, future risks, potential strategies
+  * Game-theoretic behaviors and protocol design incentives
+  * Market positioning and competitive dynamics
+  * Regulatory implications and adoption scenarios
+  * Technical evolution paths and scaling challenges
+  * Token economics implications and value accrual mechanisms
+  * Community dynamics and social sentiment analysis
+  * Partnership potential and ecosystem integration
+  * Risk scenarios: bear case, bull case, black swan events
+  * Timeline predictions and milestone expectations
 
-After the full formatted report, output a valid JSON object with the following exact keys:
+**WRITING REQUIREMENTS:**
+- Use advanced crypto terminology and sophisticated analysis
+- Include specific metrics, numbers, dates when available
+- Reference competitors and market context extensively
+- Elaborate extensively on strategic implications
+- Cite sources inline throughout: [Source Title](URL)
+- Each section should be substantial and comprehensive
+- NEVER write brief or superficial content
+
+**OUTPUT FORMAT:**
+1. Full formatted report (4000+ words)
+2. Valid JSON object with section keys:
 ${REPORT_STRUCTURE.map(s => `- "${s}"`).join("\n")}
-Each key's value should be the full text of the corresponding section.
 
 Return **both** the formatted report and the JSON object in your output.
 `;
