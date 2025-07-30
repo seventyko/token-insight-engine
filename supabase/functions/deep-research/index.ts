@@ -64,45 +64,54 @@ const REPORT_STRUCTURE = [
 ];
 
 const COMBINED_STRUCTURE_PROMPT = `
-**CRITICAL REQUIREMENTS:**
-- MINIMUM 4000 words for deep-dive reports (TARGET: 5000-7000 words)
-- ALL sections must be comprehensive with detailed analysis
-- EVERY section MUST include substantial speculative content
+**CRITICAL: YOU MUST WRITE A COMPLETE 4000+ WORD REPORT**
 
-You must organize the research report into the following exact sections:
+**ABSOLUTE REQUIREMENTS - NO EXCEPTIONS:**
+1. MINIMUM 4000 words total (count carefully - target 5000-7000 words)
+2. Complete ALL 8 sections fully - never truncate or summarize
+3. Each section must be 500-800 words minimum
+4. NEVER stop writing until all sections are complete
+5. Include comprehensive analysis with extensive detail and data
 
-${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+**STRUCTURE - COMPLETE ALL SECTIONS:**
+${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s} (500-800 words minimum)`).join("\n")}
 
-**MANDATORY STRUCTURE FOR EACH SECTION:**
-- **ESSENCE** (bold): 1-2 sentence summary takeaway
-- **DETAILED ANALYSIS** (300-600 words): Comprehensive examination with data, facts, and context
-- **🔮 SPECULATIVE ANGLE** (200-400 words per section): 
-  * Synthesize trends, future risks, potential strategies
-  * Game-theoretic behaviors and protocol design incentives
-  * Market positioning and competitive dynamics
-  * Regulatory implications and adoption scenarios
-  * Technical evolution paths and scaling challenges
-  * Token economics implications and value accrual mechanisms
-  * Community dynamics and social sentiment analysis
-  * Partnership potential and ecosystem integration
-  * Risk scenarios: bear case, bull case, black swan events
-  * Timeline predictions and milestone expectations
+**MANDATORY FORMAT FOR EVERY SECTION:**
 
-**WRITING REQUIREMENTS:**
-- Use advanced crypto terminology and sophisticated analysis
-- Include specific metrics, numbers, dates when available
-- Reference competitors and market context extensively
-- Elaborate extensively on strategic implications
-- Cite sources inline throughout: [Source Title](URL)
-- Each section should be substantial and comprehensive
-- NEVER write brief or superficial content
+**ESSENCE** (bold): One clear sentence summary
+**DETAILED ANALYSIS** (400-500 words minimum): 
+- Comprehensive data analysis with specific metrics
+- Historical context and market positioning
+- Technical details and implementation specifics
+- Competitive landscape analysis
+- Financial metrics and performance data
+- Regulatory considerations and compliance status
 
-**OUTPUT FORMAT:**
-1. Full formatted report (4000+ words)
-2. Valid JSON object with section keys:
-${REPORT_STRUCTURE.map(s => `- "${s}"`).join("\n")}
+**🔮 SPECULATIVE ANGLE** (300-400 words minimum):
+- Future market scenarios (bull/bear/sideways cases)
+- Strategic partnerships and ecosystem integration potential
+- Regulatory evolution and compliance implications
+- Technical roadmap and scaling challenges
+- Token economics evolution and value accrual
+- Community growth dynamics and adoption curves
+- Competitive threats and defensive strategies
+- Black swan events and risk scenarios
+- Timeline predictions with specific milestones
 
-Return **both** the formatted report and the JSON object in your output.
+**CRITICAL WRITING STANDARDS:**
+- Use sophisticated crypto analysis terminology
+- Include specific numbers, dates, percentages, market caps
+- Reference multiple competitors and market context
+- Cite sources inline with [Title](URL) format
+- Write in-depth analysis, never superficial summaries
+- Each paragraph should be 100+ words with substantial content
+- Never use placeholder text or generic statements
+
+**YOU MUST COMPLETE THE ENTIRE REPORT - DO NOT STOP EARLY**
+Write each section in full detail. If you reach token limits, prioritize completing all sections over JSON output.
+
+After the complete formatted report, output this JSON:
+${REPORT_STRUCTURE.map(s => `"${s}": "[full section text]"`).join(",\n")}
 `;
 
 // Utility functions
