@@ -47,9 +47,11 @@ type ResearchReport = {
 
 // Config
 const MODEL_NAME = "gpt-4.1-2025-04-14";
-const API_TIMEOUT = 30000;
+const API_TIMEOUT = 60000; // Increased to 60 seconds
+const OPENAI_TIMEOUT = 90000; // Separate longer timeout for OpenAI
 const TARGET_WORD_COUNT_MIN = 4000;
 const TARGET_WORD_COUNT_LITE = 800;
+const MAX_SOURCES_TO_SEND = 15; // Limit sources to prevent overwhelming context
 
 const REPORT_STRUCTURE = [
   "TLDR",
@@ -149,15 +151,29 @@ async function tavilySearchBatch(queries: string[], apiKey: string, debug = fals
           body: JSON.stringify({
             query,
             search_depth: "advanced",
-            max_results: 8
+            max_results: 5, // Reduced from 8 to limit data
+            include_raw_content: false // Don't include full raw content
           })
         }), API_TIMEOUT), 2, debug
       );
       
       const data = await result.json();
       const results = data.results || [];
-      const content = results.map((r: any) => `Title: ${r.title}\nURL: ${r.url}\nContent: ${cleanWebContent(r.content)}`).join('\n\n---\n\n');
-      return { content, sources: results.map((r: any) => ({ title: r.title, url: r.url, content: cleanWebContent(r.content) })) };
+      // Limit content length per source to prevent context overflow
+      const content = results.map((r: any) => {
+        const cleanContent = cleanWebContent(r.content);
+        const truncatedContent = cleanContent.length > 1000 ? cleanContent.substring(0, 1000) + "..." : cleanContent;
+        return `Title: ${r.title}\nURL: ${r.url}\nContent: ${truncatedContent}`;
+      }).join('\n\n---\n\n');
+      
+      return { 
+        content, 
+        sources: results.map((r: any) => ({ 
+          title: r.title, 
+          url: r.url, 
+          content: cleanWebContent(r.content).substring(0, 1000) // Limit source content too
+        })) 
+      };
     } catch (e) {
       if (debug) console.log(`[Tavily error for query "${query}"]:`, e);
       return { content: "", sources: [] };
@@ -334,14 +350,23 @@ async function performDeepResearch(
   const webContext = searchResults.map(r => r.content).filter(Boolean).join('\n\n');
   const sources = searchResults.flatMap(r => r.sources);
   const uniqueSources = sources.filter((s, i, self) => s.url && i === self.findIndex(t => t.url === s.url));
+  
+  // Limit sources to prevent context overflow
+  const limitedSources = uniqueSources.slice(0, MAX_SOURCES_TO_SEND);
+  
+  // Limit web context length
+  const maxContextLength = 20000; // Limit total context to ~20k chars
+  const limitedWebContext = webContext.length > maxContextLength 
+    ? webContext.substring(0, maxContextLength) + "\n\n[Content truncated for processing efficiency...]"
+    : webContext;
 
-  const noSources = mode === "lite" ? false : uniqueSources.length === 0;
+  const noSources = mode === "lite" ? false : limitedSources.length === 0;
 
   const systemPrompt = "You are a world-class crypto research analyst. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described.";
 
-  const prompt = buildPrompt(input, webContext, uniqueSources, noSources, mode);
+  const prompt = buildPrompt(input, limitedWebContext, limitedSources, noSources, mode);
 
-  console.log(`[${requestId}] Generated ${uniqueQueries.length} search queries, found ${uniqueSources.length} unique sources`);
+  console.log(`[${requestId}] Generated ${uniqueQueries.length} search queries, found ${uniqueSources.length} sources, using ${limitedSources.length} sources`);
 
   const { result: response, retries: retriesUsed } = await retry(() =>
     withTimeout(fetch('https://api.openai.com/v1/chat/completions', {
@@ -359,7 +384,7 @@ async function performDeepResearch(
         temperature: 0.4,
         max_tokens: mode === "deep-dive" ? 15000 : 4000
       })
-    }), API_TIMEOUT), 2, debug
+    }), OPENAI_TIMEOUT), 2, debug // Use longer timeout for OpenAI
   );
 
   const data = await response.json();
@@ -395,7 +420,7 @@ async function performDeepResearch(
 
   const researchReport: ResearchReport = {
     report,
-    sources: uniqueSources,
+    sources: limitedSources,
     requestId,
     confidenceScore,
     mode,
