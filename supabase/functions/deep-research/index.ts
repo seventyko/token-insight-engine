@@ -46,9 +46,9 @@ type ResearchReport = {
 };
 
 // Config
-const MODEL_NAME = "gpt-4.1-2025-04-14";
-const API_TIMEOUT = 120000; // 2 minutes for API calls
-const OPENAI_TIMEOUT = 300000; // 5 minutes for OpenAI - deep research takes time
+const MODEL_NAME = "gpt-4o"; // Use the more reliable gpt-4o model
+const API_TIMEOUT = 180000; // 3 minutes for API calls
+const OPENAI_TIMEOUT = 600000; // 10 minutes for OpenAI - long reports need time
 const TARGET_WORD_COUNT_MIN = 4000;
 const TARGET_WORD_COUNT_LITE = 800;
 
