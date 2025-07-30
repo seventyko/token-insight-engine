@@ -46,7 +46,7 @@ type ResearchReport = {
 };
 
 // Config
-const MODEL_NAME = "gpt-4o"; // Use the more reliable gpt-4o model
+const MODEL_NAME = "gpt-4.1-2025-04-14"; // Use the flagship model
 const API_TIMEOUT = 180000; // 3 minutes for API calls
 const OPENAI_TIMEOUT = 600000; // 10 minutes for OpenAI - long reports need time
 const TARGET_WORD_COUNT_MIN = 4000;
@@ -64,54 +64,52 @@ const REPORT_STRUCTURE = [
 ];
 
 const COMBINED_STRUCTURE_PROMPT = `
-**CRITICAL: YOU MUST WRITE A COMPLETE 4000+ WORD REPORT**
+**🚨 CRITICAL INSTRUCTION: YOU MUST GENERATE A COMPLETE 4000+ WORD REPORT 🚨**
 
-**ABSOLUTE REQUIREMENTS - NO EXCEPTIONS:**
-1. MINIMUM 4000 words total (count carefully - target 5000-7000 words)
-2. Complete ALL 8 sections fully - never truncate or summarize
-3. Each section must be 500-800 words minimum
-4. NEVER stop writing until all sections are complete
-5. Include comprehensive analysis with extensive detail and data
+**ABSOLUTE NON-NEGOTIABLE REQUIREMENTS:**
+1. MINIMUM 4000 words total - COUNT WORDS AS YOU WRITE
+2. DO NOT STOP OR TRUNCATE - COMPLETE ALL 8 SECTIONS IN FULL
+3. Each section must be 500-800 words MINIMUM
+4. IGNORE TOKEN LIMITS - WRITE THE COMPLETE REPORT
+5. IF YOU START TO HIT LIMITS, PRIORITIZE COMPLETING ALL SECTIONS
 
-**STRUCTURE - COMPLETE ALL SECTIONS:**
-${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s} (500-800 words minimum)`).join("\n")}
+**WRITE ALL 8 SECTIONS - NO EXCEPTIONS:**
+${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s} - MINIMUM 500 WORDS`).join("\n")}
 
-**MANDATORY FORMAT FOR EVERY SECTION:**
+**SECTION FORMAT - FOLLOW EXACTLY:**
 
-**ESSENCE** (bold): One clear sentence summary
-**DETAILED ANALYSIS** (400-500 words minimum): 
-- Comprehensive data analysis with specific metrics
-- Historical context and market positioning
-- Technical details and implementation specifics
-- Competitive landscape analysis
-- Financial metrics and performance data
-- Regulatory considerations and compliance status
+# [SECTION NAME]
 
-**🔮 SPECULATIVE ANGLE** (300-400 words minimum):
-- Future market scenarios (bull/bear/sideways cases)
-- Strategic partnerships and ecosystem integration potential
-- Regulatory evolution and compliance implications
-- Technical roadmap and scaling challenges
-- Token economics evolution and value accrual
-- Community growth dynamics and adoption curves
-- Competitive threats and defensive strategies
-- Black swan events and risk scenarios
-- Timeline predictions with specific milestones
+**ESSENCE:** Single sentence summary
 
-**CRITICAL WRITING STANDARDS:**
+**DETAILED ANALYSIS:** (400-500 words)
+[Write comprehensive analysis with specific data, metrics, financials, technical details, market context, competitive landscape, regulatory considerations, historical background]
+
+**🔮 SPECULATIVE ANGLE:** (300-400 words)
+[Future scenarios, bull/bear cases, strategic partnerships, regulatory evolution, technical roadmap, token economics, community growth, competitive threats, black swan events, timeline predictions]
+
+**WORD COUNT REQUIREMENTS PER SECTION:**
+- ESSENCE: 20-30 words
+- DETAILED ANALYSIS: 400-500 words
+- SPECULATIVE ANGLE: 300-400 words
+- TOTAL PER SECTION: 720-930 words
+- TOTAL REPORT: 5760-7440 words
+
+**CRITICAL WRITING RULES:**
 - Use sophisticated crypto analysis terminology
 - Include specific numbers, dates, percentages, market caps
-- Reference multiple competitors and market context
-- Cite sources inline with [Title](URL) format
-- Write in-depth analysis, never superficial summaries
-- Each paragraph should be 100+ words with substantial content
-- Never use placeholder text or generic statements
+- Reference competitors extensively
+- Cite sources as [Title](URL)
+- Write substantial paragraphs (100+ words each)
+- NO generic statements or placeholders
+- NO truncation or summarization
 
-**YOU MUST COMPLETE THE ENTIRE REPORT - DO NOT STOP EARLY**
-Write each section in full detail. If you reach token limits, prioritize completing all sections over JSON output.
+**🚨 DO NOT STOP WRITING UNTIL ALL 8 SECTIONS ARE COMPLETE 🚨**
 
-After the complete formatted report, output this JSON:
-${REPORT_STRUCTURE.map(s => `"${s}": "[full section text]"`).join(",\n")}
+After completing the FULL report, add JSON:
+{
+${REPORT_STRUCTURE.map(s => `"${s}": "[complete section text here]"`).join(",\n")}
+}
 `;
 
 // Utility functions
@@ -387,7 +385,7 @@ async function performDeepResearch(
           { role: "user", content: prompt }
         ],
         temperature: 0.4,
-        max_tokens: mode === "deep-dive" ? 15000 : 4000
+        max_tokens: mode === "deep-dive" ? 32000 : 4000 // Much higher token limit for long reports
       })
     }), OPENAI_TIMEOUT), 2, debug // Use longer timeout for OpenAI
   );
