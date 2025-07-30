@@ -47,8 +47,8 @@ type ResearchReport = {
 
 // Config
 const MODEL_NAME = "gpt-4.1-2025-04-14"; // Use the flagship model
-const API_TIMEOUT = 180000; // 3 minutes for API calls
-const OPENAI_TIMEOUT = 240000; // 4 minutes for OpenAI - within Supabase limits
+const API_TIMEOUT = 90000; // 90 seconds for API calls
+const OPENAI_TIMEOUT = 120000; // 2 minutes for OpenAI - must fit within Supabase limits
 const TARGET_WORD_COUNT_MIN = 4000;
 const TARGET_WORD_COUNT_LITE = 800;
 
@@ -165,7 +165,9 @@ async function retry<T>(fn: () => Promise<T>, retries = 2, debug = false): Promi
 }
 
 async function tavilySearchBatch(queries: string[], apiKey: string, debug = false): Promise<{ content: string; sources: SearchSource[] }[]> {
-  return Promise.all(queries.map(async (query) => {
+  // Limit concurrent requests to avoid timeout
+  const limitedQueries = queries.slice(0, 6); // Reduce from 12 to 6 queries
+  return Promise.all(limitedQueries.map(async (query) => {
     try {
       const {result} = await retry(() =>
         withTimeout(fetch('https://api.tavily.com/search', {
@@ -176,10 +178,10 @@ async function tavilySearchBatch(queries: string[], apiKey: string, debug = fals
           },
           body: JSON.stringify({
             query,
-            search_depth: "advanced",
-            max_results: 8 // Back to 8 for full quality
+            search_depth: "basic", // Use basic instead of advanced for faster results
+            max_results: 5 // Reduce from 8 to 5 for faster processing
           })
-        }), API_TIMEOUT), 2, debug
+        }), API_TIMEOUT), 1, debug // Reduce retries
       );
       
       const data = await result.json();
