@@ -382,24 +382,20 @@ export default async function handler(req, res) {
       project_name, 
       project_website, 
       project_twitter, 
-      project_contract, 
-      strict_mode, 
-      mode = 'deep-dive',
-      openai_api_key,
-      tavily_api_key
+      project_contract
     } = req.body;
+
+    // Use server-side API keys
+    const openai_api_key = process.env.OPENAI_API_KEY || 'your-openai-api-key-here';
+    const tavily_api_key = process.env.TAVILY_API_KEY || 'your-tavily-api-key-here';
 
     if (!project_name) {
       return res.status(400).json({ error: 'Project name is required' });
     }
 
-    if (!openai_api_key || !tavily_api_key) {
-      return res.status(400).json({ error: 'OpenAI and Tavily API keys are required' });
-    }
-
     const result = await performDeepResearch(
-      { project_name, project_website, project_twitter, project_contract, strict_mode },
-      mode,
+      { project_name, project_website, project_twitter, project_contract },
+      'deep-dive',
       openai_api_key,
       tavily_api_key
     );

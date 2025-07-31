@@ -10,9 +10,6 @@ interface ProjectInput {
   project_website: string;
   project_twitter: string;
   project_contract?: string;
-  strict_mode?: boolean;
-  openai_api_key?: string;
-  tavily_api_key?: string;
 }
 
 const Index = () => {
@@ -23,7 +20,7 @@ const Index = () => {
   // External API endpoint for unlimited processing time
   const externalApiUrl = '/api/deep-research';
 
-  const handleResearch = async (data: ProjectInput, mode: 'deep-dive' | 'lite') => {
+  const handleResearch = async (data: ProjectInput) => {
     setIsLoading(true);
     try {
       // Call external API for unlimited processing time
@@ -36,11 +33,7 @@ const Index = () => {
           project_name: data.project_name,
           project_website: data.project_website,
           project_twitter: data.project_twitter,
-          project_contract: data.project_contract,
-          strict_mode: data.strict_mode,
-          mode: mode,
-          openai_api_key: data.openai_api_key,
-          tavily_api_key: data.tavily_api_key
+          project_contract: data.project_contract
         })
       });
 
@@ -54,7 +47,7 @@ const Index = () => {
       
       toast({
         title: "Research Complete",
-        description: `Generated ${mode === 'deep-dive' ? 'comprehensive' : 'quick'} analysis for ${data.project_name}`,
+        description: `Generated comprehensive analysis for ${data.project_name}`,
       });
     } catch (error) {
       console.error('Research failed:', error);

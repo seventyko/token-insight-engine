@@ -13,13 +13,10 @@ interface ProjectInput {
   project_website: string;
   project_twitter: string;
   project_contract?: string;
-  strict_mode?: boolean;
-  openai_api_key?: string;
-  tavily_api_key?: string;
 }
 
 interface ResearchFormProps {
-  onSubmit: (data: ProjectInput, mode: 'deep-dive' | 'lite') => void;
+  onSubmit: (data: ProjectInput) => void;
   isLoading: boolean;
 }
 
@@ -28,25 +25,20 @@ export const ResearchForm = ({ onSubmit, isLoading }: ResearchFormProps) => {
     project_name: '',
     project_website: '',
     project_twitter: '',
-    project_contract: '',
-    strict_mode: false,
-    openai_api_key: '',
-    tavily_api_key: ''
+    project_contract: ''
   });
 
-  const handleSubmit = (e: React.FormEvent, mode: 'deep-dive' | 'lite') => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData, mode);
+    onSubmit(formData);
   };
 
-  const handleInputChange = (field: keyof ProjectInput, value: string | boolean) => {
+  const handleInputChange = (field: keyof ProjectInput, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const isFormValid = formData.project_name && 
-    (formData.project_website || formData.project_twitter) && 
-    formData.openai_api_key && 
-    formData.tavily_api_key;
+    (formData.project_website || formData.project_twitter);
 
   return (
     <Card className="w-full max-w-2xl mx-auto border-border/50 bg-card/50 backdrop-blur-sm">
@@ -120,99 +112,24 @@ export const ResearchForm = ({ onSubmit, isLoading }: ResearchFormProps) => {
             />
           </div>
 
-          <Separator className="my-6" />
-          
-          {/* API Keys Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Key className="w-4 h-4" />
-              <span className="font-medium">API Configuration</span>
-              <div className="flex items-center gap-1 text-warning">
-                <AlertCircle className="w-3 h-3" />
-                <span className="text-xs">Keys stored securely in session</span>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="openai_api_key" className="text-foreground font-medium">
-                  OpenAI API Key *
-                </Label>
-                <Input
-                  id="openai_api_key"
-                  type="password"
-                  value={formData.openai_api_key}
-                  onChange={(e) => handleInputChange('openai_api_key', e.target.value)}
-                  placeholder="sk-proj-..."
-                  className="bg-secondary/50 border-border/50 focus:border-primary font-mono text-sm"
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="tavily_api_key" className="text-foreground font-medium">
-                  Tavily API Key *
-                </Label>
-                <Input
-                  id="tavily_api_key"
-                  type="password"
-                  value={formData.tavily_api_key}
-                  onChange={(e) => handleInputChange('tavily_api_key', e.target.value)}
-                  placeholder="tvly-..."
-                  className="bg-secondary/50 border-border/50 focus:border-primary font-mono text-sm"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 p-4 rounded-lg bg-secondary/30 border border-border/30">
-            <Checkbox
-              id="strict_mode"
-              checked={formData.strict_mode}
-              onCheckedChange={(checked) => handleInputChange('strict_mode', checked as boolean)}
-              disabled={isLoading}
-            />
-            <Label 
-              htmlFor="strict_mode" 
-              className="text-sm font-medium text-foreground cursor-pointer"
-            >
-              Strict Mode
-              <span className="block text-xs text-muted-foreground">
-                Enhanced validation and quality checks
-              </span>
-            </Label>
-          </div>
         </form>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+        <div className="flex justify-center pt-4">
           <Button
-            onClick={(e) => handleSubmit(e, 'lite')}
-            disabled={!isFormValid || isLoading}
-            variant="secondary"
-            size="lg"
-            className="flex-1 h-14"
-          >
-            <Search className="w-5 h-5 mr-2" />
-            Quick Analysis
-            <Badge variant="outline" className="ml-2">~800 words</Badge>
-          </Button>
-          
-          <Button
-            onClick={(e) => handleSubmit(e, 'deep-dive')}
+            onClick={handleSubmit}
             disabled={!isFormValid || isLoading}
             size="lg"
-            className="flex-1 h-14 bg-gradient-to-r from-primary to-chart-positive hover:opacity-90 animate-glow"
+            className="w-full max-w-md h-14 bg-gradient-to-r from-primary to-chart-positive hover:opacity-90 animate-glow"
           >
             <Sparkles className="w-5 h-5 mr-2" />
-            Deep Research
+            Generate Deep Research
             <Badge variant="outline" className="ml-2 bg-primary-foreground/10">4000+ words</Badge>
           </Button>
         </div>
 
         {!isFormValid && (
           <p className="text-warning text-sm text-center">
-            Please provide project name, website/Twitter URL, and both API keys
+            Please provide project name and website or Twitter URL
           </p>
         )}
       </CardContent>
