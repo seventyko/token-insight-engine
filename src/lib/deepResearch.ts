@@ -89,7 +89,7 @@ export class DeepResearch {
           'Authorization': `Bearer ${this.openaiApiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4-turbo-preview',
+          model: 'gpt-4o',
           messages: [
             {
               role: 'system',
