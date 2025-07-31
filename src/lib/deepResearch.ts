@@ -1,26 +1,52 @@
-interface ProjectInput {
+import OpenAI from "openai";
+
+export const REPORT_STRUCTURE = [
+  "TLDR",
+  "Project Information & Competition",
+  "Team, Venture Funds, CEO and Key Members",
+  "Tokenomics",
+  "Airdrops and Incentive Programs",
+  "Social Media & Community Analysis",
+  "On-Chain Overview",
+  "Conclusion"
+];
+
+const COMBINED_STRUCTURE_PROMPT = `
+Organize the research report into the following sections:
+
+${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+For each section:
+- Begin with a bold ESSENCE line (summary takeaway)
+- Include a 🔮 Speculative Angle subsection (future risks, trends, strategies, game-theory, KOL speculation, catalysts)
+- Use crisp, high-signal writing for crypto-native degens
+- Cite sources inline where appropriate
+
+After the full formatted report, output a valid JSON object with these keys:
+${REPORT_STRUCTURE.map(s => `- "${s}"`).join("\n")}
+Each value should be the full text for that section.
+
+Return BOTH the formatted report and the JSON object.
+`;
+
+export type ProjectInput = {
   project_name: string;
   project_website: string;
   project_twitter: string;
   project_contract?: string;
   strict_mode?: boolean;
   mode: 'deep-dive' | 'lite';
-}
+};
 
-interface SearchResult {
+export type SearchSource = {
   title: string;
   url: string;
   content: string;
-  published_date?: string;
-}
+};
 
-interface ResearchReport {
+export type ResearchReport = {
   report: string;
-  sources: Array<{
-    title: string;
-    url: string;
-    content: string;
-  }>;
+  sources: SearchSource[];
   requestId: string;
   confidenceScore: number;
   mode: "deep-dive" | "lite";
@@ -37,18 +63,106 @@ interface ResearchReport {
     sectionCoverageScore?: number;
   };
   jsonSections?: Record<string, string>;
+};
+
+function sanitizeInput(input: string) {
+  return input ? input.replace(/[<>]/g, "").trim() : "";
 }
 
-export class DeepResearch {
+function cleanURL(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url.replace(/^[\s@]+/, "");
+  }
+}
+
+function cleanWebContent(content: string) {
+  return content.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function extractJsonSections(report: string): Record<string, string> | undefined {
+  try {
+    const jsonMatch = report.match(/```json([\s\S]*?)```|(\{[\s\S]*?\})/);
+    let jsonText = jsonMatch?.[1] || jsonMatch?.[2];
+    if (jsonText) {
+      const obj = JSON.parse(jsonText);
+      const keys = Object.keys(obj);
+      const validKeys = REPORT_STRUCTURE.every(key => keys.includes(key));
+      return validKeys ? obj : undefined;
+    }
+  } catch {}
+  return undefined;
+}
+
+function validateStrictMode(report: string, jsonSections: Record<string, string> | undefined, mode: "deep-dive" | "lite"): string[] {
+  const warnings: string[] = [];
+  const wordCount = report.split(/\s+/).length;
+  const minWords = mode === "deep-dive" ? 4000 : 800;
+  if (wordCount < minWords) {
+    warnings.push(`Report word count (${wordCount}) is below minimum required (${minWords})`);
+  }
+  if (!jsonSections) {
+    warnings.push("No valid JSON sections extracted.");
+  } else {
+    for (const key of REPORT_STRUCTURE) {
+      if (!jsonSections[key] || !jsonSections[key].trim()) {
+        warnings.push(`Missing or empty section: "${key}"`);
+      } else {
+        if (!/Speculative Angle[\s\S]*?:[\s\S]*?\S/.test(jsonSections[key])) {
+          warnings.push(`Section "${key}" missing non-empty 'Speculative Angle' subsection.`);
+        }
+      }
+    }
+  }
+  return warnings;
+}
+
+function computeSpeculativeDensity(report: string, jsonSections?: Record<string, string>): number {
+  if (!jsonSections) return 0;
+  let totalWords = 0;
+  let speculativeWords = 0;
+  for (const key of REPORT_STRUCTURE) {
+    const section = jsonSections[key];
+    if (!section) continue;
+    const words = section.split(/\s+/).length;
+    totalWords += words;
+    const match = section.match(/Speculative Angle[\s\S]*?:([\s\S]*)/i);
+    if (match && match[1]) {
+      speculativeWords += match[1].split(/\s+/).length;
+    }
+  }
+  return totalWords > 0 ? speculativeWords / totalWords : 0;
+}
+
+function scoreSectionCoverage(jsonSections?: Record<string, string>): number {
+  if (!jsonSections) return 0;
+  let present = 0;
+  let withSpeculation = 0;
+  for (const key of REPORT_STRUCTURE) {
+    const section = jsonSections[key];
+    if (section && section.trim()) {
+      present += 1;
+      if (/Speculative Angle[\s\S]*?:[\s\S]*?\S/.test(section)) {
+        withSpeculation += 1;
+      }
+    }
+  }
+  return present / REPORT_STRUCTURE.length * 0.7 + withSpeculation / REPORT_STRUCTURE.length * 0.3;
+}
+
+export class DeepResearchDegen {
   private openaiApiKey: string;
   private tavilyApiKey: string;
+  private modelName: string;
 
-  constructor(openaiApiKey: string, tavilyApiKey: string) {
+  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "gpt-4o") {
     this.openaiApiKey = openaiApiKey;
     this.tavilyApiKey = tavilyApiKey;
+    this.modelName = modelName;
   }
 
-  private async searchWeb(query: string, maxResults: number = 8): Promise<SearchResult[]> {
+  private async searchWeb(query: string, maxResults: number = 8): Promise<SearchSource[]> {
     try {
       const response = await fetch('https://api.tavily.com/search', {
         method: 'POST',
@@ -73,271 +187,113 @@ export class DeepResearch {
       }
 
       const data = await response.json();
-      return data.results || [];
+      return (data.results || []).map((r: any) => ({
+        title: r.title,
+        url: r.url,
+        content: cleanWebContent(r.content)
+      }));
     } catch (error) {
       console.error('Web search failed:', error);
       return [];
     }
   }
 
-  private async generateAIAnalysis(prompt: string, maxTokens: number = 1500): Promise<string> {
+  private async generateAIReport(prompt: string, mode: "deep-dive" | "lite"): Promise<string> {
+    const openai = new OpenAI({ apiKey: this.openaiApiKey });
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.openaiApiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a senior crypto/blockchain analyst with deep expertise in tokenomics, DeFi, team evaluation, and market analysis. Provide thorough, insightful analysis based on the provided data.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: maxTokens,
-          temperature: 0.7
-        })
+      const response = await openai.chat.completions.create({
+        model: this.modelName,
+        messages: [
+          { role: "system", content: "You are a world-class crypto research analyst. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.4,
+        max_tokens: mode === "deep-dive" ? 15000 : 4000
       });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.choices[0]?.message?.content || '';
+      return response.choices[0].message.content || "";
     } catch (error) {
-      console.error('AI analysis failed:', error);
-      return 'Analysis unavailable due to API error.';
+      console.error("AI analysis failed:", error);
+      return "Analysis unavailable due to API error.";
     }
   }
 
   public async generateReport(input: ProjectInput): Promise<ResearchReport> {
     const startTime = Date.now();
-    console.log(`Starting ${input.mode} research for ${input.project_name}`);
-
-    // Comprehensive search queries for maximum quality
-    const searchQueries = [
-      `${input.project_name} tokenomics token distribution`,
-      `${input.project_name} team founders background`,
-      `${input.project_name} funding investors venture capital`,
-      `${input.project_name} roadmap development milestones`,
-      `${input.project_name} competitors market analysis`,
-      `${input.project_name} technology blockchain architecture`,
-      `${input.project_name} risks security audit`,
-      `${input.project_name} community governance token`,
-      `${input.project_name} partnerships ecosystem`,
-      `${input.project_name} price prediction analysis`,
-      `${input.project_name} DeFi TVL volume metrics`,
-      `${input.project_name} news recent developments`
-    ];
-
-    // Collect all research data
-    let allSearchResults: SearchResult[] = [];
-    
-    for (const query of searchQueries) {
-      console.log(`Searching: ${query}`);
+    const queries = [
+      `${sanitizeInput(input.project_name)} whitepaper`,
+      `${sanitizeInput(input.project_name)} roadmap`,
+      `${sanitizeInput(input.project_name)} token unlock schedule`,
+      `${sanitizeInput(input.project_name)} governance`,
+      `${sanitizeInput(input.project_name)} chain OR L2 OR DeFi category`,
+      `${sanitizeInput(input.project_name)} recent news OR updates OR partnerships`,
+      `${sanitizeInput(input.project_name)} tokenomics AND vesting`,
+      `${sanitizeInput(input.project_name)} team OR founders`,
+      `${sanitizeInput(input.project_contract || '')} etherscan OR audit`,
+      `${sanitizeInput(cleanURL(input.project_website))} metrics OR product`,
+      `${sanitizeInput(cleanURL(input.project_twitter))} influencer sentiment`,
+    ].filter(Boolean);
+    let allSearchResults: SearchSource[] = [];
+    for (const query of queries) {
       const results = await this.searchWeb(query);
       allSearchResults = [...allSearchResults, ...results];
-      
-      // Add delay to respect rate limits
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    // Deduplicate sources by URL
+    const uniqueSources = allSearchResults.filter((s, i, self) => s.url && i === self.findIndex(t => t.url === s.url));
+    const webContext = uniqueSources.map(r => `Title: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`).join('\n\n---\n\n');
+    // Attribution block
+    const attribution = uniqueSources.length
+      ? "\n\n---\nSources referenced:\n" + uniqueSources.map(s => `- [${s.title}](${s.url})`).join("\n")
+      : "";
 
-    console.log(`Collected ${allSearchResults.length} search results`);
+    // Build prompt
+    const prompt = `
+Project name: \`${sanitizeInput(input.project_name) || 'Not provided'}\`
+Project website: \`${sanitizeInput(cleanURL(input.project_website)) || 'Not provided'}\`
+Project twitter: \`${sanitizeInput(cleanURL(input.project_twitter)) || 'Not provided'}\`
+Smart contract: \`${sanitizeInput(input.project_contract || '') || 'Not provided'}\`
 
-    // Compile research data
-    const researchData = allSearchResults
-      .map(result => `Title: ${result.title}\nURL: ${result.url}\nContent: ${result.content}\n---`)
-      .join('\n');
+${webContext ? `
+# WEB RESEARCH CONTEXT
+<web_context>
+${webContext}
+</web_context>
+` : ""}
+${attribution}
+${COMBINED_STRUCTURE_PROMPT}
+`;
 
-    // Generate comprehensive analysis sections
-    const sections = await Promise.all([
-      this.generateAIAnalysis(`
-        Analyze the tokenomics and token economics for ${input.project_name}.
-        
-        Research Data:
-        ${researchData}
-        
-        Provide detailed analysis of:
-        1. Token distribution and allocation
-        2. Token utility and use cases
-        3. Supply mechanics (inflation/deflation)
-        4. Staking and governance mechanisms
-        5. Token value accrual model
-        
-        Be specific with numbers and mechanisms where available.
-      `, 2000),
-
-      this.generateAIAnalysis(`
-        Analyze the team and founding background for ${input.project_name}.
-        
-        Research Data:
-        ${researchData}
-        
-        Provide detailed analysis of:
-        1. Founder backgrounds and experience
-        2. Team composition and expertise
-        3. Advisory board and mentors
-        4. Previous project experience
-        5. Reputation and track record
-        
-        Include specific names and credentials where available.
-      `, 2000),
-
-      this.generateAIAnalysis(`
-        Conduct market analysis for ${input.project_name}.
-        
-        Research Data:
-        ${researchData}
-        
-        Provide detailed analysis of:
-        1. Market size and opportunity
-        2. Competitive landscape
-        3. Market positioning
-        4. Growth potential
-        5. Market trends and dynamics
-        
-        Include specific market metrics and competitor comparisons.
-      `, 2000),
-
-      this.generateAIAnalysis(`
-        Analyze the technical aspects of ${input.project_name}.
-        
-        Research Data:
-        ${researchData}
-        
-        Provide detailed analysis of:
-        1. Blockchain architecture and consensus
-        2. Smart contract security
-        3. Technical innovations
-        4. Development activity
-        5. Scalability and performance
-        
-        Include technical specifications and code quality assessment.
-      `, 2000),
-
-      this.generateAIAnalysis(`
-        Conduct risk assessment for ${input.project_name}.
-        
-        Research Data:
-        ${researchData}
-        
-        Provide detailed analysis of:
-        1. Technical risks
-        2. Market risks
-        3. Regulatory risks
-        4. Team/execution risks
-        5. Competitive risks
-        
-        Rate each risk category and provide mitigation strategies.
-      `, 2000),
-
-      this.generateAIAnalysis(`
-        Generate investment thesis and recommendation for ${input.project_name}.
-        
-        Research Data:
-        ${researchData}
-        
-        Provide:
-        1. Investment thesis (bull case)
-        2. Key value drivers
-        3. Catalysts and milestones
-        4. Target timeline and price targets
-        5. Final recommendation (Buy/Hold/Sell)
-        
-        Be specific with reasoning and potential returns.
-      `, 2000)
-    ]);
-
-    // Generate executive summary
-    const executiveSummary = await this.generateAIAnalysis(`
-      Create an executive summary for ${input.project_name} investment research.
-      
-      Based on the following analysis sections:
-      
-      Token Analysis: ${sections[0]}
-      Team Analysis: ${sections[1]}
-      Market Analysis: ${sections[2]}
-      Technical Analysis: ${sections[3]}
-      Risk Assessment: ${sections[4]}
-      Investment Thesis: ${sections[5]}
-      
-      Provide a concise but comprehensive executive summary highlighting:
-      1. Key findings
-      2. Main strengths and weaknesses
-      3. Overall assessment
-      4. Key metrics and data points
-    `, 1000);
-
-    const endTime = Date.now();
-    const processingTime = Math.round((endTime - startTime) / 1000);
-    
-    console.log(`Research completed in ${processingTime} seconds`);
-
-    // Compile full report
-    const fullReport = `
-# ${input.project_name} - Comprehensive Research Report
-
-## Executive Summary
-${executiveSummary}
-
-## Token Analysis
-${sections[0]}
-
-## Team Analysis  
-${sections[1]}
-
-## Market Analysis
-${sections[2]}
-
-## Technical Analysis
-${sections[3]}
-
-## Risk Assessment
-${sections[4]}
-
-## Investment Thesis
-${sections[5]}
-    `.trim();
-
+    // Generate report
+    const report = await this.generateAIReport(prompt, input.mode);
+    const wordCount = report.split(/\s+/).length;
     const requestId = Math.random().toString(36).substring(7);
-    
+    const jsonSections = extractJsonSections(report);
+    let strictModeWarnings: string[] | undefined = undefined;
+    if (input.strict_mode) {
+      strictModeWarnings = validateStrictMode(report, jsonSections, input.mode);
+    }
+    const speculativeDensity = computeSpeculativeDensity(report, jsonSections);
+    const sectionCoverageScore = scoreSectionCoverage(jsonSections);
+
     return {
-      report: fullReport,
-      sources: allSearchResults.map(result => ({
-        title: result.title,
-        url: result.url,
-        content: result.content
-      })),
-      requestId: requestId,
-      confidenceScore: Math.min(95, Math.max(60, allSearchResults.length * 5)),
+      report,
+      sources: uniqueSources,
+      requestId,
+      confidenceScore: Math.min(95, Math.max(60, uniqueSources.length * 5)),
       mode: input.mode,
       metadata: {
         createdAt: Date.now(),
-        requestId: requestId,
-        wordCount: fullReport.length,
-        queryTerms: searchQueries,
+        requestId,
+        wordCount,
+        queryTerms: queries,
         retries: 0,
-        durationMs: processingTime * 1000,
-        confidenceReason: `Based on ${allSearchResults.length} search results`,
-        speculativeDensity: 75,
-        sectionCoverageScore: 95
+        durationMs: Date.now() - startTime,
+        speculativeDensity,
+        sectionCoverageScore,
+        confidenceReason: `Based on ${uniqueSources.length} search results`,
+        ...(strictModeWarnings ? { strictModeWarnings } : {})
       },
-      jsonSections: {
-        'Executive Summary': executiveSummary,
-        'Token Analysis': sections[0],
-        'Team Analysis': sections[1],
-        'Market Analysis': sections[2],
-        'Technical Analysis': sections[3],
-        'Risk Assessment': sections[4],
-        'Investment Thesis': sections[5]
-      }
+      jsonSections
     };
   }
 }

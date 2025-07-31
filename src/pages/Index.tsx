@@ -3,7 +3,7 @@ import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
-import { DeepResearch } from '@/lib/deepResearch';
+import { DeepResearchDegen } from '@/lib/deepResearch';
 
 interface ProjectInput {
   project_name: string;
@@ -27,8 +27,8 @@ const Index = () => {
     setIsLoading(true);
     try {
       // Frontend-only research - no server timeouts!
-      const research = new DeepResearch(openaiApiKey, tavilyApiKey);
-      const results = await research.generateReport({
+      const researcher = new DeepResearchDegen(openaiApiKey, tavilyApiKey);
+      const results = await researcher.generateReport({
         project_name: data.project_name,
         project_website: data.project_website,
         project_twitter: data.project_twitter,
