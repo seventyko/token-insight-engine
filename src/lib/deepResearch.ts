@@ -11,86 +11,150 @@ export const REPORT_STRUCTURE = [
   "Conclusion"
 ];
 
+// Advanced search query templates for comprehensive data gathering
+const SEARCH_QUERY_TEMPLATES = {
+  basic: (project: string) => [
+    `${project} crypto project overview`,
+    `${project} tokenomics whitepaper`,
+    `${project} team founders background`,
+    `${project} roadmap development updates`
+  ],
+  enhanced: (project: string, twitter?: string, website?: string) => [
+    `${project} DeFi TVL volume metrics analytics`,
+    `${project} on-chain analytics transaction volume wallets`,
+    `${project} crypto twitter KOL influencer opinion sentiment`,
+    `${project} governance proposals DAO voting participation`,
+    `${project} security audit report vulnerabilities`,
+    `${project} competitors comparison market share`,
+    `${project} airdrop farming strategy eligibility`,
+    `${project} yield farming staking APY rewards protocol`,
+    `${project} whale wallet concentration distribution analysis`,
+    `${project} regulatory compliance legal risks SEC`,
+    `${project} institutional adoption enterprise partnerships`,
+    `${project} developer activity GitHub commits contributors`,
+    ...(twitter ? [`site:twitter.com ${twitter} ${project} alpha calls predictions`] : []),
+    ...(website ? [`site:${website} documentation API technical specs`] : [])
+  ],
+  speculation: (project: string) => [
+    `${project} price prediction 2024 2025 bull bear scenarios`,
+    `${project} market catalysts events upcoming releases`,
+    `${project} narrative ecosystem integrations partnerships`,
+    `${project} competitive advantages moats differentiation`,
+    `${project} risks threats regulatory black swan events`,
+    `${project} adoption metrics user growth network effects`,
+    `${project} token economics game theory incentive alignment`
+  ],
+  defi: (project: string) => [
+    `${project} Total Value Locked TVL DeFiLlama`,
+    `${project} yield farming pools liquidity mining`,
+    `${project} impermanent loss risks strategies`,
+    `${project} governance token utility voting rights`,
+    `${project} protocol revenue fee distribution`,
+    `${project} liquidity depth order book analysis`,
+    `${project} smart contract risks audits exploits`
+  ]
+};
+
+// Retry configuration for quality control
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  minWordCount: 4000,
+  minSpeculativeDensity: 0.05,
+  minSectionCoverage: 0.8
+};
+
 const COMBINED_STRUCTURE_PROMPT = `
 🧬 DEEP RESEARCH AI MODEL PROMPT
 
-You are a **positive, high-signal crypto degen** with deep roots in the blockchain world. You live and breathe crypto, have survived market cycles, and chase alpha across chains. Your tone is sharp, speculative, energized, and strategic. Write with conviction, clarity, and zero fluff.
+You are a **legendary crypto degen** with deep alpha-hunting instincts. You've survived multiple cycles, spotted 100x gems early, and understand market psychology at the molecular level. Your analysis is surgical, speculative, and absolutely LOADED with edge. Write like you're briefing a whale fund on their next 8-figure play.
 
-**CRITICAL: This report MUST be at least 4000 words. Count your words as you write. Short reports will be rejected.**
+**CRITICAL ENFORCEMENT: This report MUST exceed 4000 words. COUNT EVERY WORD. Short reports get instantly rejected.**
 
-**MISSION:** Conduct deep-dive research (minimum 4000 words) and deliver maximum signal with zero fluff. Your crypto degen credibility is on the line.
+**MISSION:** Deliver nuclear-grade alpha analysis (4000+ words) that separates signal from noise. Your reputation as the ultimate crypto analyst is on the line.
 
-**MANDATORY STRUCTURE:** Organize into exactly these 8 sections with substantial content for each:
+**MANDATORY STRUCTURE:** Execute exactly these 8 sections with SUBSTANTIAL depth:
 
 ${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
-**SECTION LENGTH REQUIREMENTS:**
-- Each section should be 400-600 words minimum
-- TLDR: 300+ words (comprehensive overview)
-- Project Information & Competition: 500+ words (deep market analysis)
-- Team, Venture Funds, CEO: 500+ words (detailed background research)
-- Tokenomics: 600+ words (comprehensive economic analysis)
-- Airdrops and Incentives: 400+ words (program analysis and speculation)
-- Social Media & Community: 500+ words (sentiment and engagement analysis)
-- On-Chain Overview: 600+ words (detailed metrics and activity)
-- Conclusion: 400+ words (strategic synthesis and outlook)
+**MINIMUM SECTION LENGTHS (STRICTLY ENFORCED):**
+- TLDR: 400+ words (comprehensive market thesis)
+- Project Information & Competition: 600+ words (deep competitive moat analysis)
+- Team, Venture Funds, CEO: 550+ words (background intelligence + track records)
+- Tokenomics: 700+ words (economic model deep-dive + game theory)
+- Airdrops and Incentives: 450+ words (farming strategies + yield optimization)
+- Social Media & Community: 550+ words (sentiment analysis + KOL tracking)
+- On-Chain Overview: 650+ words (whale behavior + transaction patterns)
+- Conclusion: 450+ words (strategic roadmap + investment thesis)
 
-**SECTION REQUIREMENTS (MUST FOLLOW):**
-Each section MUST contain:
-✅ **ESSENCE:** One-liner key takeaway (bolded)
-✅ Multiple paragraphs of detailed analysis (300+ words minimum per section)
-✅ Specific data points, metrics, and examples from web context
-✅ 🔮 **Speculative Angle:** (100+ words minimum)
-   - Theorize about future developments, risks, catalysts
-   - Discuss KOL sentiment, game-theoretic incentives, stealth meta
-   - Build plausible but creative narratives
-   - Include price predictions and strategic implications
-✅ Source references inline where applicable
-✅ Industry comparisons and competitive positioning
+**SECTION ARCHITECTURE (NON-NEGOTIABLE):**
+Each section MUST deliver:
+✅ **ESSENCE:** Bold one-liner thesis that captures the core insight
+✅ **DEEP ANALYSIS:** 400+ words of surgical breakdown with hard data
+✅ **DATA INTEGRATION:** Weave in specific metrics, percentages, dollar amounts from web context
+✅ **COMPETITIVE POSITIONING:** Compare against 2-3 direct competitors with numbers
+✅ 🔮 **SPECULATIVE ANGLE:** (150+ words MINIMUM)
+   - **Bull Case:** Realistic 6-18 month upside catalysts with price targets
+   - **Bear Case:** Key risks that could crater the project
+   - **Alpha Thesis:** Non-obvious edge that others are missing
+   - **Timeline Predictions:** Specific milestones and their market impact
+   - **KOL Sentiment:** What the smart money is saying
+   - **Meta Analysis:** How this fits broader crypto narratives
+✅ **SOURCE CITATIONS:** Reference specific data points inline
 
-**TONE & STYLE (MANDATORY):**
-- ✅ Positive degen energy — passionate, assertive, strategic
-- ✅ Speculative and high-conviction — form hypotheses and forecast
-- ✅ Crypto-native — assume audience understands DEXs, L2s, tokenomics
-- ✅ Web-integrated — leverage provided context and current data extensively
-- ✅ Data-driven — include specific numbers, metrics, and comparisons
-- ❌ NO beginner explanations, filler, or generic AI-sounding language
+**MANDATORY SPECULATION FRAMEWORKS:**
+1. **Game Theory Analysis:** How token incentives drive behavior, potential exploits
+2. **Regulatory Chess:** Impact of evolving regulations on project trajectory  
+3. **Competitive Dynamics:** Market share battles, moat durability, disruption vectors
+4. **Adoption Scenarios:** Network effects, viral growth mechanics, institutional entry
+5. **Black Swan Events:** Low-probability, high-impact scenarios (both positive/negative)
+6. **Liquidity Analysis:** Token flow dynamics, whale concentration, exit scenarios
 
-**CONTENT DEPTH REQUIREMENTS:**
-- Analyze all provided web context thoroughly
-- Include specific statistics, numbers, and data points
-- Reference multiple sources per section
-- Provide detailed technical analysis where relevant
-- Include market positioning and competitive landscape
-- Discuss regulatory implications and risks
-- Address sustainability and long-term viability
+**CRYPTO-DEGEN TONE REQUIREMENTS:**
+- ✅ **CONVICTION:** Write with absolute certainty about your analysis
+- ✅ **SPECULATION:** Make bold predictions with specific timelines
+- ✅ **ALPHA-NATIVE:** Assume reader understands complex DeFi mechanics
+- ✅ **DATA-OBSESSED:** Every claim backed by hard numbers from research
+- ✅ **EDGE-FOCUSED:** Highlight non-obvious insights others are missing
+- ✅ **FORWARD-LOOKING:** Constantly theorize about future scenarios
+- ❌ **ZERO FLUFF:** No beginner explanations or generic crypto content
 
-**OUTPUT REQUIREMENTS:**
-You MUST return BOTH:
+**ADVANCED CONTENT REQUIREMENTS:**
+- **Quantitative Depth:** Include TVL figures, transaction volumes, yield rates, market caps
+- **Technical Analysis:** Smart contract mechanics, protocol architecture, security models
+- **Market Psychology:** Why this narrative will/won't capture attention
+- **Institutional Perspective:** How VCs, funds, and whales view this opportunity
+- **Ecosystem Mapping:** Partnerships, integrations, competitive advantages
+- **Risk Assessment:** Technical, regulatory, market, and execution risks
+- **Liquidity Dynamics:** Token distribution, unlock schedules, selling pressure
 
-1. **Full Formatted Report** (4000+ words minimum - STRICT REQUIREMENT)
-2. **Valid JSON Object** with these exact keys:
+**OUTPUT SPECIFICATIONS:**
+You MUST deliver BOTH:
+
+1. **FULL RESEARCH REPORT** (4000+ words - STRICTLY ENFORCED)
+2. **STRUCTURED JSON OBJECT** with exact keys:
 ${REPORT_STRUCTURE.map(s => `"${s}"`).join(", ")}
 
-Each JSON value must contain the complete section text including ESSENCE and Speculative Angle.
+JSON values must contain complete section text including ESSENCE and Speculative Angle.
 
-**VALIDATION METRICS:**
-- Word Count: ≥ 4000 (HARD REQUIREMENT - reports under 4000 words will be rejected)
-- All 8 sections present and populated with substantial content
-- Speculative Angle in every section (100+ words each)
-- Crypto-native tone throughout
-- Citations encouraged inline
-- Comprehensive use of provided web context
+**QUALITY ENFORCEMENT METRICS:**
+- Word Count: ≥ 4000 (AUTOMATIC REJECTION if below)
+- Section Completeness: All 8 sections with substantial analysis
+- Speculation Density: ≥5% of content must be forward-looking predictions
+- Data Integration: Reference provided web context extensively
+- Crypto-Native Language: DeFi terminology, yield farming, governance concepts
+- Competitive Analysis: Compare against 3+ similar projects with specifics
 
-**WRITING STRATEGY:**
-1. Start with comprehensive research synthesis
-2. Build detailed arguments with supporting evidence
-3. Include multiple perspectives and scenarios
-4. Provide actionable insights and recommendations
-5. Connect dots between different data points
-6. Think like you're briefing a $100M fund manager
+**ADVANCED WRITING STRATEGY:**
+1. **Research Synthesis:** Distill 50+ sources into coherent narrative
+2. **Pattern Recognition:** Connect seemingly unrelated data points
+3. **Scenario Planning:** Map out 3-5 potential future outcomes
+4. **Investment Framework:** Structure analysis like institutional research
+5. **Alpha Generation:** Identify non-consensus opportunities
+6. **Risk Management:** Highlight potential downside scenarios
 
-Treat this like you're sending it to a high-net-worth crypto trader deciding on a 7-figure allocation. Max signal. Zero fluff. MINIMUM 4000 WORDS.
+This analysis will influence major capital allocation decisions. Deliver MAXIMUM ALPHA with ZERO COMPROMISE on depth, speculation, or edge.
+
+**MINIMUM 4000 WORDS. NO EXCEPTIONS.**
 `;
 
 export type ProjectInput = {
@@ -284,83 +348,272 @@ export class DeepResearchDegen {
     }
   }
 
+  private generateAdvancedQueries(input: ProjectInput): string[] {
+    const projectName = sanitizeInput(input.project_name);
+    const website = sanitizeInput(cleanURL(input.project_website));
+    const twitter = sanitizeInput(cleanURL(input.project_twitter));
+    
+    // Combine all query templates for comprehensive coverage
+    const basicQueries = SEARCH_QUERY_TEMPLATES.basic(projectName);
+    const enhancedQueries = SEARCH_QUERY_TEMPLATES.enhanced(projectName, twitter, website);
+    const speculationQueries = SEARCH_QUERY_TEMPLATES.speculation(projectName);
+    const defiQueries = SEARCH_QUERY_TEMPLATES.defi(projectName);
+    
+    // Additional context-specific queries
+    const contextQueries = [
+      ...(input.project_contract ? [`${input.project_contract} etherscan audit security`] : []),
+      `"${projectName}" ecosystem partnerships integrations`,
+      `"${projectName}" narrative meta trends 2024`,
+      `"${projectName}" institutional adoption whale activity`,
+      `"${projectName}" developer ecosystem grants`,
+      `"${projectName}" competitive moat unique value proposition`
+    ];
+
+    return [...basicQueries, ...enhancedQueries, ...speculationQueries, ...defiQueries, ...contextQueries]
+      .filter(Boolean)
+      .slice(0, 25); // Limit to prevent overwhelming search
+  }
+
+  private async conductBatchedSearch(queries: string[]): Promise<SearchSource[]> {
+    const batchSize = 3;
+    const allResults: SearchSource[] = [];
+    
+    for (let i = 0; i < queries.length; i += batchSize) {
+      const batch = queries.slice(i, i + batchSize);
+      const batchPromises = batch.map(query => this.searchWeb(query, 6));
+      
+      try {
+        const batchResults = await Promise.all(batchPromises);
+        allResults.push(...batchResults.flat());
+        
+        // Rate limiting between batches
+        if (i + batchSize < queries.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.warn(`Batch search failed for queries ${i}-${i + batchSize}:`, error);
+      }
+    }
+    
+    return allResults;
+  }
+
+  private evaluateReportQuality(report: string, jsonSections: Record<string, string> | undefined, mode: "deep-dive" | "lite"): {
+    isAcceptable: boolean;
+    score: number;
+    issues: string[];
+  } {
+    const issues: string[] = [];
+    let score = 0;
+    
+    // Word count validation
+    const wordCount = report.split(/\s+/).length;
+    const minWords = mode === "deep-dive" ? RETRY_CONFIG.minWordCount : 800;
+    if (wordCount >= minWords) {
+      score += 30;
+    } else {
+      issues.push(`Word count ${wordCount} below minimum ${minWords}`);
+    }
+    
+    // JSON sections validation
+    if (jsonSections) {
+      score += 20;
+      const sectionCoverage = scoreSectionCoverage(jsonSections);
+      if (sectionCoverage >= RETRY_CONFIG.minSectionCoverage) {
+        score += 25;
+      } else {
+        issues.push(`Section coverage ${sectionCoverage.toFixed(2)} below minimum ${RETRY_CONFIG.minSectionCoverage}`);
+      }
+    } else {
+      issues.push("No valid JSON sections found");
+    }
+    
+    // Speculative density check
+    const speculativeDensity = computeSpeculativeDensity(report, jsonSections);
+    if (speculativeDensity >= RETRY_CONFIG.minSpeculativeDensity) {
+      score += 15;
+    } else {
+      issues.push(`Speculative density ${speculativeDensity.toFixed(3)} below minimum ${RETRY_CONFIG.minSpeculativeDensity}`);
+    }
+    
+    // Content quality heuristics
+    const hasNumbers = /\d+/.test(report);
+    const hasPercentages = /%/.test(report);
+    const hasCryptoTerms = /(DeFi|TVL|APY|tokenomics|governance|staking|yield|liquidity)/gi.test(report);
+    
+    if (hasNumbers && hasPercentages && hasCryptoTerms) {
+      score += 10;
+    } else {
+      issues.push("Report lacks sufficient data density and crypto-specific content");
+    }
+    
+    return {
+      isAcceptable: score >= 70 && issues.length <= 1,
+      score,
+      issues
+    };
+  }
+
+  private async generateReportWithRetry(
+    basePrompt: string, 
+    mode: "deep-dive" | "lite", 
+    webContext: string,
+    retryCount = 0
+  ): Promise<{ report: string; finalRetryCount: number }> {
+    
+    let enhancedPrompt = basePrompt;
+    
+    // Add retry-specific instructions
+    if (retryCount > 0) {
+      enhancedPrompt += `
+
+**RETRY ATTEMPT #${retryCount}**
+⚠️ Previous attempt failed quality checks. THIS MUST BE FIXED:
+- MINIMUM ${mode === "deep-dive" ? "4000" : "800"} words (count as you write)
+- ALL 8 sections must be substantial with deep analysis
+- EVERY section needs 100+ word Speculative Angle with specific predictions
+- Include MORE data points, numbers, metrics from the web context
+- Be MORE speculative and forward-thinking
+- Use MORE crypto-native terminology and insights
+
+**WEB CONTEXT USAGE REQUIREMENT:**
+You MUST reference and analyze the following web research data extensively:
+${webContext.substring(0, 3000)}...
+
+FAILURE TO MEET THESE REQUIREMENTS WILL RESULT IN ANOTHER RETRY.`;
+    }
+    
+    const report = await this.generateAIReport(enhancedPrompt, mode);
+    const jsonSections = extractJsonSections(report);
+    const quality = this.evaluateReportQuality(report, jsonSections, mode);
+    
+    // If quality is acceptable or max retries reached, return
+    if (quality.isAcceptable || retryCount >= RETRY_CONFIG.maxRetries) {
+      return { report, finalRetryCount: retryCount };
+    }
+    
+    // Otherwise, retry with enhanced prompt
+    console.log(`Report quality insufficient (score: ${quality.score}), retrying... Issues:`, quality.issues);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return this.generateReportWithRetry(basePrompt, mode, webContext, retryCount + 1);
+  }
+
   public async generateReport(input: ProjectInput): Promise<ResearchReport> {
     const startTime = Date.now();
-    const queries = [
-      `${sanitizeInput(input.project_name)} whitepaper`,
-      `${sanitizeInput(input.project_name)} roadmap`,
-      `${sanitizeInput(input.project_name)} token unlock schedule`,
-      `${sanitizeInput(input.project_name)} governance`,
-      `${sanitizeInput(input.project_name)} chain OR L2 OR DeFi category`,
-      `${sanitizeInput(input.project_name)} recent news OR updates OR partnerships`,
-      `${sanitizeInput(input.project_name)} tokenomics AND vesting`,
-      `${sanitizeInput(input.project_name)} team OR founders`,
-      `${sanitizeInput(input.project_contract || '')} etherscan OR audit`,
-      `${sanitizeInput(cleanURL(input.project_website))} metrics OR product`,
-      `${sanitizeInput(cleanURL(input.project_twitter))} influencer sentiment`,
-    ].filter(Boolean);
-    let allSearchResults: SearchSource[] = [];
-    for (const query of queries) {
-      const results = await this.searchWeb(query);
-      allSearchResults = [...allSearchResults, ...results];
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    // Deduplicate sources by URL
-    const uniqueSources = allSearchResults.filter((s, i, self) => s.url && i === self.findIndex(t => t.url === s.url));
-    const webContext = uniqueSources.map(r => `Title: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`).join('\n\n---\n\n');
+    
+    // Generate comprehensive queries using advanced templates
+    const queries = this.generateAdvancedQueries(input);
+    
+    // Conduct batched search for better performance and coverage
+    const allSearchResults = await this.conductBatchedSearch(queries);
+    
+    // Deduplicate and prioritize sources
+    const uniqueSources = allSearchResults
+      .filter((s, i, self) => s.url && i === self.findIndex(t => t.url === s.url))
+      .sort((a, b) => {
+        // Prioritize official sources and high-quality content
+        const aScore = this.scoreSource(a, input.project_name);
+        const bScore = this.scoreSource(b, input.project_name);
+        return bScore - aScore;
+      })
+      .slice(0, 50); // Limit to top sources
+
+    const webContext = uniqueSources
+      .map(r => `Title: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`)
+      .join('\n\n---\n\n');
+    
     // Attribution block
     const attribution = uniqueSources.length
       ? "\n\n---\nSources referenced:\n" + uniqueSources.map(s => `- [${s.title}](${s.url})`).join("\n")
       : "";
 
-    // Build prompt
-    const prompt = `
+    // Build comprehensive prompt
+    const basePrompt = `
 Project name: \`${sanitizeInput(input.project_name) || 'Not provided'}\`
 Project website: \`${sanitizeInput(cleanURL(input.project_website)) || 'Not provided'}\`
 Project twitter: \`${sanitizeInput(cleanURL(input.project_twitter)) || 'Not provided'}\`
 Smart contract: \`${sanitizeInput(input.project_contract || '') || 'Not provided'}\`
 
 ${webContext ? `
-# WEB RESEARCH CONTEXT
+# COMPREHENSIVE WEB RESEARCH CONTEXT
 <web_context>
 ${webContext}
 </web_context>
+
+**CRITICAL:** You MUST leverage this extensive research context throughout your analysis. Reference specific data points, quotes, and insights from these sources.
 ` : ""}
 ${attribution}
-${COMBINED_STRUCTURE_PROMPT}
-`;
+${COMBINED_STRUCTURE_PROMPT}`;
 
-    // Generate report
-    const report = await this.generateAIReport(prompt, input.mode);
+    // Generate report with retry logic for quality assurance
+    const { report, finalRetryCount } = await this.generateReportWithRetry(
+      basePrompt, 
+      input.mode, 
+      webContext
+    );
+    
     const wordCount = report.split(/\s+/).length;
     const requestId = Math.random().toString(36).substring(7);
     const jsonSections = extractJsonSections(report);
+    
     let strictModeWarnings: string[] | undefined = undefined;
     if (input.strict_mode) {
       strictModeWarnings = validateStrictMode(report, jsonSections, input.mode);
     }
+    
     const speculativeDensity = computeSpeculativeDensity(report, jsonSections);
     const sectionCoverageScore = scoreSectionCoverage(jsonSections);
+    const qualityEvaluation = this.evaluateReportQuality(report, jsonSections, input.mode);
 
     return {
       report,
       sources: uniqueSources,
       requestId,
-      confidenceScore: Math.min(95, Math.max(60, uniqueSources.length * 5)),
+      confidenceScore: Math.min(95, Math.max(
+        50, 
+        uniqueSources.length * 3 + qualityEvaluation.score
+      )),
       mode: input.mode,
       metadata: {
         createdAt: Date.now(),
         requestId,
         wordCount,
         queryTerms: queries,
-        retries: 0,
+        retries: finalRetryCount,
         durationMs: Date.now() - startTime,
         speculativeDensity,
         sectionCoverageScore,
-        confidenceReason: `Based on ${uniqueSources.length} search results`,
+        confidenceReason: `Quality score: ${qualityEvaluation.score}/100, ${uniqueSources.length} sources, ${finalRetryCount} retries`,
         ...(strictModeWarnings ? { strictModeWarnings } : {})
       },
       jsonSections
     };
+  }
+
+  private scoreSource(source: SearchSource, projectName: string): number {
+    let score = 0;
+    const url = source.url.toLowerCase();
+    const title = source.title.toLowerCase();
+    const content = source.content.toLowerCase();
+    
+    // Official sources get highest priority
+    if (url.includes('github.com') || url.includes('docs.') || url.includes('whitepaper')) score += 10;
+    if (url.includes('medium.com') || url.includes('blog.')) score += 5;
+    if (url.includes('twitter.com') || url.includes('discord.')) score += 3;
+    
+    // Content quality indicators
+    if (content.includes('tokenomics') || content.includes('roadmap')) score += 5;
+    if (content.includes('audit') || content.includes('security')) score += 4;
+    if (content.includes('tvl') || content.includes('volume')) score += 3;
+    
+    // Project name relevance
+    const projectLower = projectName.toLowerCase();
+    if (title.includes(projectLower)) score += 8;
+    if (content.includes(projectLower)) score += 2;
+    
+    // Recency indicators (rough heuristic)
+    if (content.includes('2024') || content.includes('2025')) score += 2;
+    
+    return score;
   }
 }
