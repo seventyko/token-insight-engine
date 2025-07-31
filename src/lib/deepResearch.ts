@@ -199,7 +199,10 @@ export class DeepResearchDegen {
   }
 
   private async generateAIReport(prompt: string, mode: "deep-dive" | "lite"): Promise<string> {
-    const openai = new OpenAI({ apiKey: this.openaiApiKey });
+    const openai = new OpenAI({ 
+      apiKey: this.openaiApiKey,
+      dangerouslyAllowBrowser: true 
+    });
     try {
       const response = await openai.chat.completions.create({
         model: this.modelName,
