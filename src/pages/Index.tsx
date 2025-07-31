@@ -3,7 +3,7 @@ import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
-import { DeepResearchDegen } from '@/lib/deepResearch';
+
 
 interface ProjectInput {
   project_name: string;
@@ -11,6 +11,8 @@ interface ProjectInput {
   project_twitter: string;
   project_contract?: string;
   strict_mode?: boolean;
+  openai_api_key?: string;
+  tavily_api_key?: string;
 }
 
 const Index = () => {
@@ -18,25 +20,36 @@ const Index = () => {
   const [results, setResults] = useState<ResearchReport | null>(null);
   const { toast } = useToast();
 
-  // Hardcoded API keys
-  const openaiApiKey = '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';
-  const tavilyApiKey = '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';
-  const externalApiUrl = 'https://xxjntcqhtwhdlfkndkqj.supabase.co/functions/v1/deep-research';
+  // External API endpoint for unlimited processing time
+  const externalApiUrl = '/api/deep-research';
 
   const handleResearch = async (data: ProjectInput, mode: 'deep-dive' | 'lite') => {
     setIsLoading(true);
     try {
-      // Frontend-only research - no server timeouts!
-      const researcher = new DeepResearchDegen(openaiApiKey, tavilyApiKey);
-      const results = await researcher.generateReport({
-        project_name: data.project_name,
-        project_website: data.project_website,
-        project_twitter: data.project_twitter,
-        project_contract: data.project_contract,
-        strict_mode: data.strict_mode,
-        mode: mode
+      // Call external API for unlimited processing time
+      const response = await fetch(externalApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_name: data.project_name,
+          project_website: data.project_website,
+          project_twitter: data.project_twitter,
+          project_contract: data.project_contract,
+          strict_mode: data.strict_mode,
+          mode: mode,
+          openai_api_key: data.openai_api_key,
+          tavily_api_key: data.tavily_api_key
+        })
       });
-      
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const results = await response.json();
       setResults(results);
       
       toast({
@@ -45,9 +58,23 @@ const Index = () => {
       });
     } catch (error) {
       console.error('Research failed:', error);
+      let errorMessage = "Unable to generate research report. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          errorMessage = "Invalid API keys. Please check your OpenAI and Tavily API keys.";
+        } else if (error.message.includes('Rate limit') || error.message.includes('429')) {
+          errorMessage = "API rate limit exceeded. Please try again in a few minutes.";
+        } else if (error.message.includes('timeout') || error.message.includes('504')) {
+          errorMessage = "Request timed out. Please try again - this process can take 5-10 minutes.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Research Failed",
-        description: error instanceof Error ? error.message : "Unable to generate research report. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

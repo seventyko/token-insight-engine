@@ -13,6 +13,35 @@ const API_TIMEOUT = 300000; // 5 minutes for API calls
 const OPENAI_TIMEOUT = 600000; // 10 minutes for OpenAI - no Supabase limits!
 const TARGET_WORD_COUNT_MIN = 4000;
 
+// Enhanced search query templates
+const SEARCH_QUERY_TEMPLATES = {
+  basic: [
+    "{project} whitepaper",
+    "{project} roadmap",
+    "{project} tokenomics",
+    "{project} team founders"
+  ],
+  enhanced: [
+    "{project} token unlock schedule vesting",
+    "{project} governance voting",
+    "{project} recent news updates partnerships",
+    "{project} dune dashboard analytics",
+    "{project} github code repository",
+    "{project} audit security report"
+  ],
+  speculation: [
+    "{project} future price prediction",
+    "{project} market sentiment analysis",
+    "{project} competitor comparison",
+    "{project} regulatory risk assessment"
+  ],
+  defi: [
+    "{project} TVL total value locked",
+    "{project} yield farming staking",
+    "{project} liquidity pools DEX"
+  ]
+};
+
 const REPORT_STRUCTURE = [
   "TLDR",
   "Project Information & Competition",
@@ -125,7 +154,7 @@ async function tavilySearchBatch(queries, apiKey) {
           body: JSON.stringify({
             query,
             search_depth: "advanced", // Full quality restored!
-            max_results: 8 // Back to 8 for maximum quality
+            max_results: 15 // Enhanced to 15 for maximum quality
           })
         }), API_TIMEOUT), 2
       );
@@ -212,21 +241,42 @@ async function performDeepResearch(input, mode = "deep-dive", openaiApiKey, tavi
 
   const strict_mode = !!input.strict_mode;
 
-  // Full 12 queries restored for maximum quality
-  const queries = [
-    `${sanitizeInput(input.project_name)} whitepaper`,
-    `${sanitizeInput(input.project_name)} roadmap`,
-    `${sanitizeInput(input.project_name)} token unlock schedule`,
-    `${sanitizeInput(input.project_name)} governance`,
-    `${sanitizeInput(input.project_name)} chain OR L2 OR DeFi category`,
-    `${sanitizeInput(input.project_name)} recent news OR updates OR partnerships`,
-    `${sanitizeInput(input.project_name)} tokenomics AND vesting`,
-    `${sanitizeInput(input.project_name)} team OR founders`,
-    `${sanitizeInput(input.project_name)} dune dashboard OR github`,
-    `${sanitizeInput(input.project_contract || '')} etherscan OR audit`,
-    `${sanitizeInput(cleanURL(input.project_website))} metrics OR product`,
-    `${sanitizeInput(cleanURL(input.project_twitter))} influencer sentiment`,
-  ].filter(Boolean);
+  // Generate advanced queries using templates
+  const projectName = sanitizeInput(input.project_name);
+  const queries = [];
+  
+  // Basic queries
+  SEARCH_QUERY_TEMPLATES.basic.forEach(template => {
+    queries.push(template.replace('{project}', projectName));
+  });
+  
+  // Enhanced queries
+  SEARCH_QUERY_TEMPLATES.enhanced.forEach(template => {
+    queries.push(template.replace('{project}', projectName));
+  });
+  
+  // Speculation queries
+  SEARCH_QUERY_TEMPLATES.speculation.forEach(template => {
+    queries.push(template.replace('{project}', projectName));
+  });
+  
+  // DeFi specific queries (if applicable)
+  if (input.project_contract || input.project_website?.includes('defi') || input.project_name?.toLowerCase().includes('defi')) {
+    SEARCH_QUERY_TEMPLATES.defi.forEach(template => {
+      queries.push(template.replace('{project}', projectName));
+    });
+  }
+  
+  // Additional specific queries
+  if (input.project_contract) {
+    queries.push(`${sanitizeInput(input.project_contract)} etherscan audit security`);
+  }
+  if (input.project_website) {
+    queries.push(`${sanitizeInput(cleanURL(input.project_website))} metrics product analytics`);
+  }
+  if (input.project_twitter) {
+    queries.push(`${sanitizeInput(cleanURL(input.project_twitter))} community sentiment analysis`);
+  }
   const uniqueQueries = [...new Set(queries)];
 
   const searchResults = mode === "lite" ? [] : await tavilySearchBatch(uniqueQueries, tavilyApiKey);
@@ -257,8 +307,8 @@ async function performDeepResearch(input, mode = "deep-dive", openaiApiKey, tavi
             { role: "system", content: systemPrompt },
             { role: "user", content: prompt }
           ],
-          temperature: 0.4,
-          max_tokens: mode === "deep-dive" ? 32000 : 4000 // Full token limit restored
+          temperature: 0.6,
+          max_tokens: mode === "deep-dive" ? 50000 : 4000 // Enhanced to 50k for maximum quality
         })
       }), OPENAI_TIMEOUT), 2 // Full retries restored
     );

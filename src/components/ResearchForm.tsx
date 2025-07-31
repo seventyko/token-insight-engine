@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Search, Sparkles } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Search, Sparkles, Key, AlertCircle } from 'lucide-react';
 
 interface ProjectInput {
   project_name: string;
@@ -13,6 +14,8 @@ interface ProjectInput {
   project_twitter: string;
   project_contract?: string;
   strict_mode?: boolean;
+  openai_api_key?: string;
+  tavily_api_key?: string;
 }
 
 interface ResearchFormProps {
@@ -26,7 +29,9 @@ export const ResearchForm = ({ onSubmit, isLoading }: ResearchFormProps) => {
     project_website: '',
     project_twitter: '',
     project_contract: '',
-    strict_mode: false
+    strict_mode: false,
+    openai_api_key: '',
+    tavily_api_key: ''
   });
 
   const handleSubmit = (e: React.FormEvent, mode: 'deep-dive' | 'lite') => {
@@ -38,7 +43,10 @@ export const ResearchForm = ({ onSubmit, isLoading }: ResearchFormProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const isFormValid = formData.project_name && (formData.project_website || formData.project_twitter);
+  const isFormValid = formData.project_name && 
+    (formData.project_website || formData.project_twitter) && 
+    formData.openai_api_key && 
+    formData.tavily_api_key;
 
   return (
     <Card className="w-full max-w-2xl mx-auto border-border/50 bg-card/50 backdrop-blur-sm">
@@ -112,6 +120,52 @@ export const ResearchForm = ({ onSubmit, isLoading }: ResearchFormProps) => {
             />
           </div>
 
+          <Separator className="my-6" />
+          
+          {/* API Keys Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Key className="w-4 h-4" />
+              <span className="font-medium">API Configuration</span>
+              <div className="flex items-center gap-1 text-warning">
+                <AlertCircle className="w-3 h-3" />
+                <span className="text-xs">Keys stored securely in session</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="openai_api_key" className="text-foreground font-medium">
+                  OpenAI API Key *
+                </Label>
+                <Input
+                  id="openai_api_key"
+                  type="password"
+                  value={formData.openai_api_key}
+                  onChange={(e) => handleInputChange('openai_api_key', e.target.value)}
+                  placeholder="sk-proj-..."
+                  className="bg-secondary/50 border-border/50 focus:border-primary font-mono text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="tavily_api_key" className="text-foreground font-medium">
+                  Tavily API Key *
+                </Label>
+                <Input
+                  id="tavily_api_key"
+                  type="password"
+                  value={formData.tavily_api_key}
+                  onChange={(e) => handleInputChange('tavily_api_key', e.target.value)}
+                  placeholder="tvly-..."
+                  className="bg-secondary/50 border-border/50 focus:border-primary font-mono text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center space-x-2 p-4 rounded-lg bg-secondary/30 border border-border/30">
             <Checkbox
               id="strict_mode"
@@ -158,7 +212,7 @@ export const ResearchForm = ({ onSubmit, isLoading }: ResearchFormProps) => {
 
         {!isFormValid && (
           <p className="text-warning text-sm text-center">
-            Please provide at least a project name and either a website or Twitter URL
+            Please provide project name, website/Twitter URL, and both API keys
           </p>
         )}
       </CardContent>
