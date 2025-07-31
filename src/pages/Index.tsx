@@ -3,6 +3,7 @@ import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
+import { DeepResearchDegen } from '@/lib/deepResearch';
 
 
 interface ProjectInput {
@@ -17,32 +18,24 @@ const Index = () => {
   const [results, setResults] = useState<ResearchReport | null>(null);
   const { toast } = useToast();
 
-  // External API endpoint for unlimited processing time
-  const externalApiUrl = '/api/deep-research';
+  // Hardcoded API keys for direct integration
+  const OPENAI_API_KEY = "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";
+  const TAVILY_API_KEY = "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";
 
   const handleResearch = async (data: ProjectInput) => {
     setIsLoading(true);
     try {
-      // Call external API for unlimited processing time
-      const response = await fetch(externalApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          project_name: data.project_name,
-          project_website: data.project_website,
-          project_twitter: data.project_twitter,
-          project_contract: data.project_contract
-        })
+      // Direct integration with DeepResearchDegen class
+      const researcher = new DeepResearchDegen(OPENAI_API_KEY, TAVILY_API_KEY, "gpt-4.1-2025-04-14");
+      
+      const results = await researcher.generateReport({
+        project_name: data.project_name,
+        project_website: data.project_website,
+        project_twitter: data.project_twitter,
+        project_contract: data.project_contract,
+        mode: 'deep-dive'
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const results = await response.json();
+      
       setResults(results);
       
       toast({
@@ -54,7 +47,7 @@ const Index = () => {
       let errorMessage = "Unable to generate research report. Please try again.";
       
       if (error instanceof Error) {
-        if (error.message.includes('API key')) {
+        if (error.message.includes('API key') || error.message.includes('401')) {
           errorMessage = "Invalid API keys. Please check your OpenAI and Tavily API keys.";
         } else if (error.message.includes('Rate limit') || error.message.includes('429')) {
           errorMessage = "API rate limit exceeded. Please try again in a few minutes.";
