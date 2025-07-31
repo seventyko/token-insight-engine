@@ -3,6 +3,7 @@ import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
+import { DeepResearch } from '@/lib/deepResearch';
 
 interface ProjectInput {
   project_name: string;
@@ -23,35 +24,19 @@ const Index = () => {
   const externalApiUrl = 'https://xxjntcqhtwhdlfkndkqj.supabase.co/functions/v1/deep-research';
 
   const handleResearch = async (data: ProjectInput, mode: 'deep-dive' | 'lite') => {
-
     setIsLoading(true);
     try {
-      // Use external API URL if provided, otherwise use a default (you'll need to deploy to get this URL)
-      const apiUrl = externalApiUrl || 'YOUR_DEPLOYED_API_URL/api/deep-research';
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          project_name: data.project_name,
-          project_website: data.project_website,
-          project_twitter: data.project_twitter,
-          project_contract: data.project_contract,
-          strict_mode: data.strict_mode,
-          mode: mode,
-          openai_api_key: openaiApiKey,
-          tavily_api_key: tavilyApiKey
-        })
+      // Frontend-only research - no server timeouts!
+      const research = new DeepResearch(openaiApiKey, tavilyApiKey);
+      const results = await research.generateReport({
+        project_name: data.project_name,
+        project_website: data.project_website,
+        project_twitter: data.project_twitter,
+        project_contract: data.project_contract,
+        strict_mode: data.strict_mode,
+        mode: mode
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const results = await response.json();
+      
       setResults(results);
       
       toast({
