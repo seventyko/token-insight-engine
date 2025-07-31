@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
 import { DeepResearchDegen } from '@/lib/deepResearch';
 
