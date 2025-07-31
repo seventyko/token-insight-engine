@@ -20,7 +20,7 @@ const Index = () => {
   // Hardcoded API keys
   const openaiApiKey = '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';
   const tavilyApiKey = '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';
-  const externalApiUrl = 'https://token-insight-engine.vercel.app/api/deep-research';
+  const externalApiUrl = 'https://xxjntcqhtwhdlfkndkqj.supabase.co/functions/v1/deep-research';
 
   const handleResearch = async (data: ProjectInput, mode: 'deep-dive' | 'lite') => {
 
