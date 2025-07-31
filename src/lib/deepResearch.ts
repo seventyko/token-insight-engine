@@ -290,7 +290,7 @@ export class DeepResearchDegen {
     this.modelName = modelName;
   }
 
-  private async searchWeb(query: string, maxResults: number = 8): Promise<SearchSource[]> {
+  private async searchWeb(query: string, maxResults: number = 15): Promise<SearchSource[]> {
     try {
       const response = await fetch('https://api.tavily.com/search', {
         method: 'POST',
@@ -338,8 +338,8 @@ export class DeepResearchDegen {
           { role: "system", content: "You are a world-class crypto research analyst. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.4,
-        max_tokens: mode === "deep-dive" ? 15000 : 4000
+        temperature: 0.6,
+        max_tokens: mode === "deep-dive" ? 50000 : 4000
       });
       return response.choices[0].message.content || "";
     } catch (error) {
@@ -380,7 +380,7 @@ export class DeepResearchDegen {
     
     for (let i = 0; i < queries.length; i += batchSize) {
       const batch = queries.slice(i, i + batchSize);
-      const batchPromises = batch.map(query => this.searchWeb(query, 6));
+      const batchPromises = batch.map(query => this.searchWeb(query, 12));
       
       try {
         const batchResults = await Promise.all(batchPromises);
