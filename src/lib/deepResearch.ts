@@ -55,12 +55,12 @@ const SEARCH_QUERY_TEMPLATES = {
   ]
 };
 
-// Retry configuration for quality control
+// Retry configuration for quality control - optimized for o3 model
 const RETRY_CONFIG = {
   maxRetries: 3,
-  minWordCount: 4000,
-  minSpeculativeDensity: 0.05,
-  minSectionCoverage: 0.8
+  minWordCount: 5000, // Increased for o3's superior capability
+  minSpeculativeDensity: 0.08, // Higher speculation threshold
+  minSectionCoverage: 0.85 // More stringent section coverage
 };
 
 const COMBINED_STRUCTURE_PROMPT = `
@@ -68,7 +68,7 @@ const COMBINED_STRUCTURE_PROMPT = `
 
 You are a **legendary crypto degen** with deep alpha-hunting instincts. You've survived multiple cycles, spotted 100x gems early, and understand market psychology at the molecular level. Your analysis is surgical, speculative, and absolutely LOADED with edge. Write like you're briefing a whale fund on their next 8-figure play.
 
-**CRITICAL ENFORCEMENT: This report MUST exceed 4000 words. COUNT EVERY WORD. Short reports get instantly rejected.**
+**CRITICAL ENFORCEMENT: This report MUST exceed 5000 words. COUNT EVERY WORD. Short reports get instantly rejected.**
 
 **MISSION:** Deliver nuclear-grade alpha analysis (4000+ words) that separates signal from noise. Your reputation as the ultimate crypto analyst is on the line.
 
@@ -76,15 +76,15 @@ You are a **legendary crypto degen** with deep alpha-hunting instincts. You've s
 
 ${REPORT_STRUCTURE.map((s, i) => `${i + 1}. ${s}`).join("\n")}
 
-**MINIMUM SECTION LENGTHS (STRICTLY ENFORCED):**
-- TLDR: 400+ words (comprehensive market thesis)
-- Project Information & Competition: 600+ words (deep competitive moat analysis)
-- Team, Venture Funds, CEO: 550+ words (background intelligence + track records)
-- Tokenomics: 700+ words (economic model deep-dive + game theory)
-- Airdrops and Incentives: 450+ words (farming strategies + yield optimization)
-- Social Media & Community: 550+ words (sentiment analysis + KOL tracking)
-- On-Chain Overview: 650+ words (whale behavior + transaction patterns)
-- Conclusion: 450+ words (strategic roadmap + investment thesis)
+**MINIMUM SECTION LENGTHS (STRICTLY ENFORCED FOR O3 QUALITY):**
+- TLDR: 500+ words (comprehensive market thesis with nuanced reasoning)
+- Project Information & Competition: 750+ words (deep competitive moat analysis)
+- Team, Venture Funds, CEO: 650+ words (background intelligence + track records)
+- Tokenomics: 800+ words (economic model deep-dive + game theory)
+- Airdrops and Incentives: 550+ words (farming strategies + yield optimization)
+- Social Media & Community: 650+ words (sentiment analysis + KOL tracking)
+- On-Chain Overview: 750+ words (whale behavior + transaction patterns)
+- Conclusion: 550+ words (strategic roadmap + investment thesis)
 
 **SECTION ARCHITECTURE (NON-NEGOTIABLE):**
 Each section MUST deliver:
@@ -130,19 +130,20 @@ Each section MUST deliver:
 **OUTPUT SPECIFICATIONS:**
 You MUST deliver BOTH:
 
-1. **FULL RESEARCH REPORT** (4000+ words - STRICTLY ENFORCED)
+1. **FULL RESEARCH REPORT** (5000+ words - STRICTLY ENFORCED)
 2. **STRUCTURED JSON OBJECT** with exact keys:
 ${REPORT_STRUCTURE.map(s => `"${s}"`).join(", ")}
 
 JSON values must contain complete section text including ESSENCE and Speculative Angle.
 
-**QUALITY ENFORCEMENT METRICS:**
-- Word Count: ≥ 4000 (AUTOMATIC REJECTION if below)
+**QUALITY ENFORCEMENT METRICS (O3 ENHANCED):**
+- Word Count: ≥ 5000 (AUTOMATIC REJECTION if below)
 - Section Completeness: All 8 sections with substantial analysis
-- Speculation Density: ≥5% of content must be forward-looking predictions
+- Speculation Density: ≥8% of content must be forward-looking predictions
 - Data Integration: Reference provided web context extensively
 - Crypto-Native Language: DeFi terminology, yield farming, governance concepts
 - Competitive Analysis: Compare against 3+ similar projects with specifics
+- Reasoning Depth: Multi-layered analysis with meta-cognitive insights
 
 **ADVANCED WRITING STRATEGY:**
 1. **Research Synthesis:** Distill 50+ sources into coherent narrative
@@ -154,7 +155,7 @@ JSON values must contain complete section text including ESSENCE and Speculative
 
 This analysis will influence major capital allocation decisions. Deliver MAXIMUM ALPHA with ZERO COMPROMISE on depth, speculation, or edge.
 
-**MINIMUM 4000 WORDS. NO EXCEPTIONS.**
+**MINIMUM 5000 WORDS. NO EXCEPTIONS. LEVERAGE O3'S REASONING CAPABILITIES.**
 `;
 
 export type ProjectInput = {
@@ -226,7 +227,7 @@ function extractJsonSections(report: string): Record<string, string> | undefined
 function validateStrictMode(report: string, jsonSections: Record<string, string> | undefined, mode: "deep-dive" | "lite"): string[] {
   const warnings: string[] = [];
   const wordCount = report.split(/\s+/).length;
-  const minWords = mode === "deep-dive" ? 4000 : 800;
+  const minWords = mode === "deep-dive" ? 5000 : 1200;
   if (wordCount < minWords) {
     warnings.push(`Report word count (${wordCount}) is below minimum required (${minWords})`);
   }
@@ -284,7 +285,7 @@ export class DeepResearchDegen {
   private tavilyApiKey: string;
   private modelName: string;
 
-  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "gpt-4o") {
+  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "o3-2025-04-16") {
     this.openaiApiKey = openaiApiKey;
     this.tavilyApiKey = tavilyApiKey;
     this.modelName = modelName;
@@ -335,11 +336,12 @@ export class DeepResearchDegen {
       const response = await openai.chat.completions.create({
         model: this.modelName,
         messages: [
-          { role: "system", content: "You are a world-class crypto research analyst. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
+          { role: "system", content: "You are a world-class crypto research analyst with exceptional reasoning capabilities. Leverage your advanced analytical skills to provide comprehensive multi-layered analysis. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.6,
-        max_tokens: mode === "deep-dive" ? 50000 : 4000
+        temperature: 0.7, // Slightly higher for creative speculation
+        max_tokens: mode === "deep-dive" ? 20000 : 8000, // Optimized for o3's capabilities
+        reasoning_effort: "high" // Leverage o3's reasoning mode
       });
       return response.choices[0].message.content || "";
     } catch (error) {
@@ -408,7 +410,7 @@ export class DeepResearchDegen {
     
     // Word count validation
     const wordCount = report.split(/\s+/).length;
-    const minWords = mode === "deep-dive" ? RETRY_CONFIG.minWordCount : 800;
+    const minWords = mode === "deep-dive" ? RETRY_CONFIG.minWordCount : 1200; // Higher standard for lite mode
     if (wordCount >= minWords) {
       score += 30;
     } else {

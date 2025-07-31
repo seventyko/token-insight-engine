@@ -25,8 +25,8 @@ const Index = () => {
   const handleResearch = async (data: ProjectInput) => {
     setIsLoading(true);
     try {
-      // Direct integration with DeepResearchDegen class
-      const researcher = new DeepResearchDegen(OPENAI_API_KEY, TAVILY_API_KEY, "gpt-4.1-2025-04-14");
+      // Direct integration with DeepResearchDegen class using o3 model for maximum quality
+      const researcher = new DeepResearchDegen(OPENAI_API_KEY, TAVILY_API_KEY, "o3-2025-04-16");
       
       const results = await researcher.generateReport({
         project_name: data.project_name,
