@@ -339,7 +339,7 @@ export class DeepResearchDegen {
           { role: "system", content: "You are a world-class crypto research analyst with exceptional reasoning capabilities. Leverage your advanced analytical skills to provide comprehensive multi-layered analysis. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.7, // Slightly higher for creative speculation
+        // temperature: 0.7, // Not supported by o3 models - uses default (1)
         max_completion_tokens: mode === "deep-dive" ? 20000 : 8000, // Optimized for o3's capabilities
         reasoning_effort: "high" // Leverage o3's reasoning mode
       });
