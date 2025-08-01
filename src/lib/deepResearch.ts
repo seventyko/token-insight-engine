@@ -356,34 +356,57 @@ export class DeepResearchDegen {
   }
 
   private async generateAIReport(prompt: string, mode: "deep-dive" | "lite"): Promise<string> {
+    const openai = new OpenAI({ 
+      apiKey: this.openaiApiKey,
+      dangerouslyAllowBrowser: true 
+    });
+    
     try {
-      // For o3 models, we need to use the /v1/responses endpoint instead of chat/completions
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.modelName,
-          messages: [
-            { role: "system", content: "You are a world-class crypto research analyst with exceptional reasoning capabilities. Leverage your advanced analytical skills to provide comprehensive multi-layered analysis. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
-            { role: "user", content: prompt }
-          ],
-          max_completion_tokens: mode === "deep-dive" ? 20000 : 8000,
-          reasoning_effort: "high"
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      console.log(`[DeepResearch] Starting AI analysis with model: ${this.modelName}, mode: ${mode}`);
+      
+      // Validate model name
+      if (!this.modelName || !this.modelName.includes('o3')) {
+        throw new Error(`Invalid or unsupported model: ${this.modelName}`);
       }
 
-      const data = await response.json();
-      return data.choices[0].message.content || "";
+      const requestConfig = {
+        model: this.modelName,
+        messages: [
+          { role: "system" as const, content: "You are a world-class crypto research analyst with exceptional reasoning capabilities. Leverage your advanced analytical skills to provide comprehensive multi-layered analysis. Follow the user's instructions exactly and always provide both the formatted report and a valid JSON object as described." },
+          { role: "user" as const, content: prompt }
+        ],
+        max_completion_tokens: mode === "deep-dive" ? 20000 : 8000,
+      };
+
+      console.log(`[DeepResearch] Making API request with config:`, { model: requestConfig.model, max_tokens: requestConfig.max_completion_tokens });
+
+      const response = await openai.chat.completions.create(requestConfig);
+      
+      console.log(`[DeepResearch] API response received, choices count:`, response.choices?.length);
+      
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("Empty response from OpenAI API");
+      }
+      
+      console.log(`[DeepResearch] Generated report length: ${content.length} characters`);
+      return content;
+      
     } catch (error) {
-      console.error("AI analysis failed:", error);
-      return "Analysis unavailable due to API error.";
+      console.error("[DeepResearch] AI analysis failed:", error);
+      
+      // Enhanced error logging
+      if (error instanceof Error) {
+        console.error("[DeepResearch] Error details:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack?.slice(0, 500)
+        });
+      }
+      
+      // Return more specific error message
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return `Analysis unavailable due to API error: ${errorMessage}`;
     }
   }
 
