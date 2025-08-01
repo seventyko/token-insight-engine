@@ -372,12 +372,12 @@ ${prompt}`;
       const requestBody = {
         model: this.modelName,
         input: completePrompt,
-        max_completion_tokens: mode === "deep-dive" ? 20000 : 8000,
+        max_output_tokens: mode === "deep-dive" ? 20000 : 8000,
       };
 
       console.log(`[DeepResearch] Making API request to /v1/responses with config:`, { 
         model: requestBody.model, 
-        max_tokens: requestBody.max_completion_tokens,
+        max_tokens: requestBody.max_output_tokens,
         input_length: completePrompt.length 
       });
 
