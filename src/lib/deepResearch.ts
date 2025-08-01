@@ -340,7 +340,7 @@ export class DeepResearchDegen {
           { role: "user", content: prompt }
         ],
         temperature: 0.7, // Slightly higher for creative speculation
-        max_tokens: mode === "deep-dive" ? 20000 : 8000, // Optimized for o3's capabilities
+        max_completion_tokens: mode === "deep-dive" ? 20000 : 8000, // Optimized for o3's capabilities
         reasoning_effort: "high" // Leverage o3's reasoning mode
       });
       return response.choices[0].message.content || "";
