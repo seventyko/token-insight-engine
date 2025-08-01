@@ -36,7 +36,7 @@ const SEARCH_QUERY_TEMPLATES = {
     ...(website ? [`site:${website} documentation API technical specs`] : [])
   ],
   speculation: (project: string) => [
-    `${project} price prediction 2024 2025 bull bear scenarios`,
+    `${project} price prediction 2025 bull bear scenarios`,
     `${project} market catalysts events upcoming releases`,
     `${project} narrative ecosystem integrations partnerships`,
     `${project} competitive advantages moats differentiation`,
