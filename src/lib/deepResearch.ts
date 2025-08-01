@@ -373,6 +373,11 @@ ${prompt}`;
         model: this.modelName,
         input: completePrompt,
         max_output_tokens: mode === "deep-dive" ? 20000 : 8000,
+        tools: [
+          {
+            type: "web_search_preview"
+          }
+        ],
       };
 
       console.log(`[DeepResearch] Making API request to /v1/responses with config:`, { 
