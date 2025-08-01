@@ -178,35 +178,61 @@ export const ResearchResults = ({ results, onNewSearch }: ResearchResultsProps) 
             <CardContent>
               {sections.length > 0 ? (
                 <div className="space-y-6">
-                  {sections.map(([sectionName, content], index) => (
-                    <div key={index} className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-primary">
-                          {sectionName}
-                        </h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setActiveSection(
-                            activeSection === sectionName ? null : sectionName
-                          )}
-                        >
-                          {activeSection === sectionName ? 'Collapse' : 'Expand'}
-                        </Button>
-                      </div>
-                      {(activeSection === sectionName || activeSection === null) && (
-                        <div className="prose prose-invert max-w-none">
-                          <div 
-                            className="text-sm leading-relaxed text-foreground whitespace-pre-wrap"
-                            dangerouslySetInnerHTML={{ 
-                              __html: content.replace(/\n/g, '<br />') 
-                            }}
-                          />
+                  {sections.map(([sectionName, content], index) => {
+                    // Debug logging for each section
+                    console.log(`Rendering section: ${sectionName}, content length:`, content?.length || 0);
+                    
+                    if (!content || content.trim().length === 0) {
+                      console.warn(`Empty content for section: ${sectionName}`);
+                      return null;
+                    }
+                    
+                    return (
+                      <div key={index} className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold text-primary">
+                            {sectionName}
+                          </h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveSection(
+                              activeSection === sectionName ? null : sectionName
+                            )}
+                          >
+                            {activeSection === sectionName ? 'Collapse' : 'Expand'}
+                          </Button>
                         </div>
-                      )}
-                      {index < sections.length - 1 && <Separator className="mt-6" />}
+                        {(activeSection === sectionName || activeSection === null) && (
+                          <div className="prose prose-invert max-w-none">
+                            <div 
+                              className="text-sm leading-relaxed text-foreground whitespace-pre-wrap"
+                              dangerouslySetInnerHTML={{ 
+                                __html: content.replace(/\n/g, '<br />') 
+                              }}
+                            />
+                          </div>
+                        )}
+                        {index < sections.length - 1 && <Separator className="mt-6" />}
+                      </div>
+                    );
+                  }).filter(Boolean)}
+                  
+                  {/* Fallback if all sections are empty */}
+                  {sections.every(([, content]) => !content || content.trim().length === 0) && (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground mb-4">
+                        Structured sections couldn't be displayed. Showing full report below:
+                      </p>
+                      <ScrollArea className="h-[600px] w-full rounded-md border border-border/30 p-4">
+                        <div className="prose prose-invert max-w-none">
+                          <div className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                            {results.report}
+                          </div>
+                        </div>
+                      </ScrollArea>
                     </div>
-                  ))}
+                  )}
                 </div>
               ) : (
                 <ScrollArea className="h-[600px] w-full rounded-md border border-border/30 p-4">

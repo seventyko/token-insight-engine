@@ -209,16 +209,47 @@ function cleanWebContent(content: string) {
 
 function extractJsonSections(report: string): Record<string, string> | undefined {
   try {
-    const jsonMatch = report.match(/```json([\s\S]*?)```|(\{[\s\S]*?\})/);
-    let jsonText = jsonMatch?.[1] || jsonMatch?.[2];
-    if (jsonText) {
-      const obj = JSON.parse(jsonText);
-      const keys = Object.keys(obj);
-      const validKeys = REPORT_STRUCTURE.every(key => keys.includes(key));
-      return validKeys ? obj : undefined;
+    console.log('Extracting JSON sections from report length:', report.length);
+    
+    // Look for JSON blocks in markdown format first
+    const jsonBlockMatch = report.match(/```json\s*\n([\s\S]*?)\n```/);
+    if (jsonBlockMatch) {
+      console.log('Found JSON block, parsing...');
+      const parsed = JSON.parse(jsonBlockMatch[1]);
+      console.log('Successfully parsed JSON with keys:', Object.keys(parsed));
+      return parsed;
     }
-  } catch {}
-  return undefined;
+    
+    // Look for standalone JSON object at the end of the report
+    const lines = report.split('\n');
+    let jsonStart = -1;
+    let braceCount = 0;
+    
+    // Find JSON object by counting braces backwards
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line === '}') {
+        braceCount++;
+        if (jsonStart === -1) jsonStart = i;
+      } else if (line === '{') {
+        braceCount--;
+        if (braceCount === 0 && jsonStart !== -1) {
+          // Found complete JSON object
+          const jsonContent = lines.slice(i, jsonStart + 1).join('\n');
+          console.log('Found potential JSON object, parsing...');
+          const parsed = JSON.parse(jsonContent);
+          console.log('Successfully parsed JSON with keys:', Object.keys(parsed));
+          return parsed;
+        }
+      }
+    }
+    
+    console.log('No JSON sections found in report');
+    return undefined;
+  } catch (error) {
+    console.error('Error parsing JSON sections:', error);
+    return undefined;
+  }
 }
 
 function validateStrictMode(report: string, jsonSections: Record<string, string> | undefined, mode: "deep-dive" | "lite"): string[] {
@@ -554,6 +585,8 @@ ${COMBINED_STRUCTURE_PROMPT}`;
     const wordCount = report.split(/\s+/).length;
     const requestId = Math.random().toString(36).substring(7);
     const jsonSections = extractJsonSections(report);
+    console.log('Final report processing - jsonSections:', jsonSections ? Object.keys(jsonSections) : 'none');
+    console.log('Final report length:', report.length);
     
     let strictModeWarnings: string[] | undefined = undefined;
     if (input.strict_mode) {
