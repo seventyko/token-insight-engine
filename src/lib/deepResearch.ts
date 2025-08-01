@@ -313,7 +313,7 @@ export class DeepResearchDegen {
   private tavilyApiKey: string;
   private modelName: string;
 
-  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "o3-deep-research-2025-06-26") {
+  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "o3-deep-research") {
     this.openaiApiKey = openaiApiKey;
     this.tavilyApiKey = tavilyApiKey;
     this.modelName = modelName;
