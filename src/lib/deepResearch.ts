@@ -285,7 +285,7 @@ export class DeepResearchDegen {
   private tavilyApiKey: string;
   private modelName: string;
 
-  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "o3-2025-04-16") {
+  constructor(openaiApiKey: string, tavilyApiKey: string, modelName = "o3-deep-research-2025-06-26") {
     this.openaiApiKey = openaiApiKey;
     this.tavilyApiKey = tavilyApiKey;
     this.modelName = modelName;
