@@ -386,15 +386,22 @@ ${prompt}`;
         input_length: completePrompt.length 
       });
 
-      // Use /v1/responses endpoint for o3 models
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      // Use /v1/responses endpoint for o3 models with extended timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes timeout
+      
+      try {
+        const response = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
 
       console.log(`[DeepResearch] API response status: ${response.status} ${response.statusText}`);
 
@@ -405,21 +412,51 @@ ${prompt}`;
       }
 
       const data = await response.json();
-      console.log(`[DeepResearch] API response structure:`, Object.keys(data));
+      // Extensive debugging for /v1/responses endpoint
+      console.log(`[DeepResearch] Full API response:`, JSON.stringify(data, null, 2));
+      console.log(`[DeepResearch] Response keys:`, Object.keys(data));
+      console.log(`[DeepResearch] Response type:`, typeof data);
       
-      // Handle the response format for /v1/responses endpoint
-      const content = data.response || data.choices?.[0]?.message?.content || data.content;
+      // Check for different possible response structures
+      const possibleContent = [
+        data.response,
+        data.choices?.[0]?.message?.content,
+        data.content,
+        data.output,
+        data.text,
+        data.result,
+        data.message,
+        data.data?.response,
+        data.data?.content,
+        data.analysis,
+        data.report
+      ];
+      
+      console.log(`[DeepResearch] Checking possible content fields:`, possibleContent.map((val, idx) => ({ field: idx, hasValue: !!val, type: typeof val })));
+      
+      const content = possibleContent.find(val => val && typeof val === 'string' && val.trim().length > 0);
       
       if (!content) {
-        console.error(`[DeepResearch] Unexpected response format:`, data);
-        throw new Error("Empty or invalid response from OpenAI API");
+        console.error(`[DeepResearch] No valid content found in response. Full response:`, data);
+        throw new Error(`Empty or invalid response from OpenAI API. Response structure: ${JSON.stringify(Object.keys(data))}`);
       }
       
       console.log(`[DeepResearch] Generated report length: ${content.length} characters`);
       return content;
       
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
+      
     } catch (error) {
       console.error("[DeepResearch] AI analysis failed:", error);
+      
+      // Handle timeout specifically
+      if (error.name === 'AbortError') {
+        console.error("[DeepResearch] Request timed out after 10 minutes");
+        return "Analysis unavailable due to timeout. Deep research operations can take several minutes to complete.";
+      }
       
       // Enhanced error logging
       if (error instanceof Error) {
