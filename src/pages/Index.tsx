@@ -20,26 +20,28 @@ const Index = () => {
   const handleResearch = async (data: ProjectInput) => {
     setIsLoading(true);
     try {
-      // Call the secure API endpoint instead of direct API calls
-      const response = await fetch('/api/deep-research', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          project_name: data.project_name,
-          project_website: data.project_website,
-          project_twitter: data.project_twitter,
-          project_contract: data.project_contract,
-          mode: 'deep-dive'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      // Get API keys from environment or user input
+      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY || prompt('Enter your OpenAI API Key:');
+      const tavilyApiKey = import.meta.env.VITE_TAVILY_API_KEY || prompt('Enter your Tavily API Key:');
+      
+      if (!openaiApiKey || !tavilyApiKey) {
+        throw new Error('API keys are required');
       }
 
-      const results = await response.json();
+      // Use the local DeepResearchDegen class directly
+      const { DeepResearchDegen } = await import('@/lib/deepResearch');
+      const researcher = new DeepResearchDegen(openaiApiKey, tavilyApiKey);
+      
+      const projectInput = {
+        project_name: data.project_name,
+        project_website: data.project_website,
+        project_twitter: data.project_twitter,
+        project_contract: data.project_contract || '',
+        mode: 'deep-dive' as const,
+        strict_mode: false
+      };
+      
+      const results = await researcher.generateReport(projectInput);
       setResults(results);
       
       toast({
