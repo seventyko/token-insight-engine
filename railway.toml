@@ -2,6 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-healthcheckPath = "/"
-healthcheckTimeout = 100
-restartPolicyType = "never"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+startCommand = "npm run build && npm start"

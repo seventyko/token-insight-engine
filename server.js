@@ -1,6 +1,10 @@
 // Railway deployment server
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,13 +34,15 @@ app.get('/api/health', (req, res) => {
 app.post('/api/deep-research', async (req, res) => {
   try {
     // Import the handler dynamically
-    const handler = (await import('./api/deep-research.js')).default;
+    const handlerModule = await import('./api/deep-research.js');
+    const handler = handlerModule.default;
     
-    // Create mock req/res objects for the Vercel handler
+    // Create Vercel-compatible req/res objects
     const mockReq = { 
       method: 'POST', 
       body: req.body 
     };
+    
     const mockRes = {
       setHeader: (name, value) => res.setHeader(name, value),
       status: (code) => ({
@@ -48,7 +54,10 @@ app.post('/api/deep-research', async (req, res) => {
     await handler(mockReq, mockRes);
   } catch (error) {
     console.error('Deep research error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 });
 
