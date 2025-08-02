@@ -5,4 +5,4 @@ builder = "nixpacks"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
-startCommand = "npm run build && npm start"
+startCommand = "npm run build && node server.js"
