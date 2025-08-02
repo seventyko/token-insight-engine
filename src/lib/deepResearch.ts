@@ -44,7 +44,6 @@ export const OPENAI_DEFAULT_PARAMS = {
   model: "gpt-4-turbo-preview",
   max_tokens: 4096,
   temperature: 0.7,
-  response_format: { type: "json_object" },
 };
 
 export type ProjectInput = {
@@ -130,7 +129,7 @@ export class DeepResearchDegen {
     const systemPrompt = `${promptTemplate}\nProject Name: ${input.project_name}\nProject Website: ${input.project_website}\nProject Twitter: ${input.project_twitter}\n`;
     const content = sources.map(source => `Source: ${source.title}\nURL: ${source.url}\nContent: ${source.content}`).join('\n---\n');
 
-    const messages = [
+    const messages: Array<{ role: "system" | "user"; content: string }> = [
       { role: "system", content: systemPrompt },
       { role: "user", content: `Please create a report based on the following sources:\n${content}` },
     ];
@@ -153,7 +152,7 @@ export class DeepResearchDegen {
     }
   }
 
-  async performResearch(input: ProjectInput): Promise<ResearchReport> {
+  async generateReport(input: ProjectInput): Promise<ResearchReport> {
     const startTime = Date.now();
     const requestId = this.generateRequestId();
     
