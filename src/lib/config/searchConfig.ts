@@ -1,7 +1,52 @@
+export const ENHANCED_SEARCH_STRATEGY = {
+  // Stage 1: Broad discovery (25 searches)
+  initialQueries: 25,
+  
+  // Stage 2: Gap-filling (25 searches) 
+  focusedQueries: 25,
+  
+  // Stage 3: Deep validation (25 searches)
+  validationQueries: 25,
+  
+  // Stage 4: Real-time updates (25 searches)
+  recentQueries: 25,
+  
+  total: 100
+};
+
+export const MODEL_REGISTRY = {
+  sourceGathering: "gpt-4o",
+  contentExtraction: "gpt-4o", 
+  synthesis: "o3-deep-research",
+  speculation: "o3-deep-research",
+  finalReport: "o3-deep-research",
+  validation: "gpt-4o"
+};
+
+export const TOKEN_LIMITS = {
+  sourceGathering: 3000,
+  contentExtraction: 5000,
+  synthesis: 10000,
+  speculation: 6000,
+  finalReport: 16000,
+  validation: 2000,
+};
+
+export const PIPELINE_STAGES = [
+  'sourceGathering',
+  'contentExtraction', 
+  'synthesis',
+  'speculation',
+  'finalReport',
+  'validation'
+] as const;
+
+export type PipelineStage = typeof PIPELINE_STAGES[number];
+
 export const SEARCH_CONFIG = {
   // Cost Management
   COST_CONTROLS: {
-    maxQueriesPerRequest: 10,
+    maxQueriesPerRequest: 100, // Increased for enhanced search
     maxResultsPerQuery: 15,
     dailySpendLimit: 100,
     costPerQuery: 0.001,
@@ -55,6 +100,10 @@ export const SEARCH_CONFIG = {
     batchTimeoutMs: 60000,
     healthCheckTimeoutMs: 5000,
   },
+
+  // Enhanced search parameters
+  enhancedMode: true,
+  searchStrategy: ENHANCED_SEARCH_STRATEGY,
 };
 
 export type SearchConfig = typeof SEARCH_CONFIG;

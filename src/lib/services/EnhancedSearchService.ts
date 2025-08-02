@@ -4,7 +4,7 @@ import { RateLimiter } from './RateLimiter';
 import { CacheService } from './CacheService';
 import { SearchAnalytics } from './SearchAnalytics';
 import { withRetry, CircuitBreaker, withTimeout } from '../utils/retryUtils';
-import { SEARCH_CONFIG } from '../config/searchConfig';
+import { SEARCH_CONFIG, ENHANCED_SEARCH_STRATEGY } from '../config/searchConfig';
 
 export interface EnhancedSearchOptions {
   maxResults?: number;
@@ -375,5 +375,85 @@ export class EnhancedSearchService {
     this.cache.clear();
     this.analytics.reset();
     this.circuitBreaker.reset();
+  }
+
+  // Enhanced search method for 100 queries
+  async searchEnhanced(
+    queries: string[],
+    options: EnhancedSearchOptions = {}
+  ): Promise<{
+    results: SearchSource[];
+    totalQueries: number;
+    successfulQueries: number;
+    cacheHitRate: number;
+    duration: number;
+    requestId: string;
+    errors: string[];
+    cached: boolean;
+  }> {
+    const startTime = Date.now();
+    const requestId = `enhanced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Use enhanced search strategy
+    const strategy = ENHANCED_SEARCH_STRATEGY;
+    const totalQueries = Math.min(queries.length, strategy.total);
+    
+    // Distribute queries across stages
+    const stageQueries = {
+      initial: queries.slice(0, strategy.initialQueries),
+      focused: queries.slice(strategy.initialQueries, strategy.initialQueries + strategy.focusedQueries),
+      validation: queries.slice(strategy.initialQueries + strategy.focusedQueries, strategy.initialQueries + strategy.focusedQueries + strategy.validationQueries),
+      recent: queries.slice(strategy.initialQueries + strategy.focusedQueries + strategy.validationQueries, totalQueries)
+    };
+
+    const allResults: SearchSource[] = [];
+    const errors: string[] = [];
+    let cacheHits = 0;
+
+    // Execute searches in stages
+    for (const [stage, queries] of Object.entries(stageQueries)) {
+      if (queries.length === 0) continue;
+      
+      console.log(`Executing ${stage} stage with ${queries.length} queries`);
+      
+      for (const query of queries) {
+        try {
+          const result = await this.searchSingle(query, {
+            ...options,
+            maxResults: options.maxResults || 3,
+          });
+          
+          allResults.push(...result.results);
+          if (result.metadata.cached) cacheHits++;
+          
+          // Add delay between requests to respect rate limits
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          errors.push(`${query}: ${error.message}`);
+          console.error(`Search failed for query "${query}":`, error);
+        }
+      }
+    }
+
+    // Remove duplicates and apply quality filters
+    const uniqueResults = this.removeDuplicates(allResults);
+    const qualityFiltered = uniqueResults.filter(result => 
+      result.content.length >= SEARCH_CONFIG.QUALITY.minContentLength &&
+      result.content.length <= SEARCH_CONFIG.QUALITY.maxContentLength
+    );
+    
+    const duration = Date.now() - startTime;
+    const cacheHitRate = totalQueries > 0 ? cacheHits / totalQueries : 0;
+
+    return {
+      results: qualityFiltered,
+      totalQueries: totalQueries,
+      successfulQueries: totalQueries - errors.length,
+      cacheHitRate,
+      duration,
+      requestId,
+      errors,
+      cached: cacheHitRate > 0.5
+    };
   }
 }
