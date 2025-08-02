@@ -14,6 +14,8 @@ console.log('Server starting...');
 console.log('Port:', PORT);
 console.log('Directory:', __dirname);
 console.log('Dist exists:', existsSync(path.join(__dirname, 'dist')));
+console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+console.log('TAVILY_API_KEY exists:', !!process.env.TAVILY_API_KEY);
 
 // Middleware
 app.use(express.json());
