@@ -2,12 +2,18 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+console.log('Server starting...');
+console.log('Port:', PORT);
+console.log('Directory:', __dirname);
+console.log('Dist exists:', existsSync(path.join(__dirname, 'dist')));
 
 // Middleware
 app.use(express.json());
@@ -71,6 +77,7 @@ app.get('*', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log('Health check available at /api/health');
 });
