@@ -3,7 +3,6 @@ import { ResearchForm } from '@/components/ResearchForm';
 import { ResearchResults, ResearchReport } from '@/components/ResearchResults';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, TrendingUp, Shield, Zap } from 'lucide-react';
-import { DeepResearchDegen } from '@/lib/deepResearch';
 
 
 interface ProjectInput {
@@ -18,24 +17,29 @@ const Index = () => {
   const [results, setResults] = useState<ResearchReport | null>(null);
   const { toast } = useToast();
 
-  // Hardcoded API keys for direct integration
-  const OPENAI_API_KEY = "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";
-  const TAVILY_API_KEY = "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";
-
   const handleResearch = async (data: ProjectInput) => {
     setIsLoading(true);
     try {
-      // Direct integration with DeepResearchDegen class using o3 model for maximum quality
-      const researcher = new DeepResearchDegen(OPENAI_API_KEY, TAVILY_API_KEY, "o3-deep-research-2025-06-26");
-      
-      const results = await researcher.generateReport({
-        project_name: data.project_name,
-        project_website: data.project_website,
-        project_twitter: data.project_twitter,
-        project_contract: data.project_contract,
-        mode: 'deep-dive'
+      // Call the secure API endpoint instead of direct API calls
+      const response = await fetch('/api/deep-research', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          project_name: data.project_name,
+          project_website: data.project_website,
+          project_twitter: data.project_twitter,
+          project_contract: data.project_contract,
+          mode: 'deep-dive'
+        }),
       });
-      
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const results = await response.json();
       setResults(results);
       
       toast({
